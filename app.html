@@ -1,0 +1,1192 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mi tienda | Catálogo Pro</title>
+  <meta name="theme-color" content="#7c43ba">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var welcome = document.getElementById('welcome-screen');
+      var enterBtn = document.getElementById('enter-store');
+      function entrarTienda() {
+        try {
+          localStorage.setItem('welcome_seen_v12', 'true');
+          if (welcome) welcome.classList.add('hidden-welcome');
+          var catalogScreen = document.getElementById('catalog-screen');
+          if (catalogScreen) catalogScreen.classList.add('active');
+        } catch(e) {
+          if (welcome) welcome.style.display = 'none';
+        }
+      }
+      if (enterBtn) enterBtn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); entrarTienda(); });
+      if (welcome) welcome.addEventListener('click', function(e) { if (!e.target.closest('#enter-store')) entrarTienda(); });
+      if (localStorage.getItem('welcome_seen_v12') === 'true') {
+        if (welcome) welcome.classList.add('hidden-welcome');
+        var catalogScreen = document.getElementById('catalog-screen');
+        if (catalogScreen) catalogScreen.classList.add('active');
+      }
+    });
+  </script>
+  <div class="app-shell">
+    <!-- BANNER OFFLINE -->
+    <div id="offline-banner" class="hidden fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-orange-500 to-orange-600 text-white text-center py-2 px-4 text-sm font-semibold shadow-lg">
+      <i data-lucide="wifi-off" class="w-4 h-4 inline mr-2"></i>
+      <span>Modo offline - Los cambios se guardan localmente y se sincronizarán cuando haya conexión</span>
+    </div>
+    
+    <!-- PANTALLA DE LOGIN -->
+    <section id="login-screen" class="login-screen">
+      <div class="login-container">
+        <div class="login-logo"><i data-lucide="shopping-bag" class="w-16 h-16 text-[#7c43ba]"></i></div>
+        <h1 class="hero-title text-3xl font-bold text-center text-[#201728]">Catálogo Pro</h1>
+        <p class="text-center text-[#756c7e] mt-2 mb-8">Inicia sesión para continuar</p>
+        <form id="login-form" class="space-y-4">
+          <div>
+            <label class="block font-bold text-sm mb-1.5">Nombre de usuario o Correo</label>
+            <input id="login-email" type="text" required class="w-full input-field rounded-xl p-3" placeholder="Ej: ana1 o ana@tutienda.com" autocomplete="username">
+          </div>
+          <div>
+            <label class="block font-bold text-sm mb-1.5">Contraseña</label>
+            <div class="relative">
+              <input id="login-password" type="password" required class="w-full input-field rounded-xl p-3 pr-12" placeholder="••••••••" autocomplete="current-password">
+              <button type="button" id="toggle-password" class="absolute right-3 top-1/2 transform -translate-y-1/2 w-8 h-8 grid place-items-center text-[#756c7e] hover:text-[#7c43ba]">
+                <i data-lucide="eye" class="w-5 h-5"></i>
+              </button>
+            </div>
+          </div>
+          <div id="login-error" class="hidden rounded-xl p-3 bg-[#fff0f3] text-[#a43658] text-sm text-center"></div>
+          <button type="submit" id="login-submit" class="w-full py-3.5 rounded-xl font-bold btn-primary flex items-center justify-center gap-2">
+            <i data-lucide="log-in" class="w-4 h-4"></i> Iniciar sesión
+          </button>
+        </form>
+        <div class="mt-6 p-3 rounded-xl bg-[#f6f1f8] text-center">
+          <p class="text-xs text-[#756c7e]">¿Olvidaste tu contraseña? Contacta al administrador</p>
+        </div>
+      </div>
+    </section>
+    
+    <section id="welcome-screen" class="welcome">
+      <img src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1200" loading="lazy" alt="">
+      <div class="welcome-content">
+        <p class="uppercase tracking-[.2em] font-bold text-xs opacity-80">Catálogo Pro</p>
+        <h1>Tu negocio, <br>organizado y listo para vender.</h1>
+        <p class="max-w-md mx-auto text-base sm:text-lg leading-relaxed opacity-90">Gestiona tus productos, controla el stock y genera pedidos al instante desde tu móvil o computadora.</p>
+        <button id="enter-store" type="button" class="mt-6 rounded-full px-7 py-3.5 font-bold inline-flex items-center gap-2 bg-white text-[#7c43ba] hover:bg-[#f6f1f8] transition shadow-xl"> 
+          <span>Entrar a la tienda</span><i data-lucide="arrow-right" class="w-4 h-4"></i> 
+        </button>
+      </div>
+      <p class="welcome-tap-hint">Toca cualquier parte para entrar</p>
+    </section>
+
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+    <aside id="sidebar" class="sidebar">
+      <div class="p-5 border-b border-[#e8dfec] flex items-center justify-between">
+        <div class="flex-1 min-w-0">
+          <h1 class="hero-title font-bold text-xl text-[#201728] truncate">Mi Tienda</h1>
+          <p class="text-xs text-[#756c7e] mt-1 truncate flex items-center gap-1.5" id="sidebar-user-info">
+            <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+            <span>Cargando...</span>
+          </p>
+          <div id="connection-status-indicator" class="flex items-center gap-1.5 mt-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse"></span>
+            <span class="text-[10px] text-[#23805d] font-semibold">En línea</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="user-menu-btn" class="w-9 h-9 rounded-full bg-[#f3eef6] grid place-items-center hover:bg-[#e8dfec]" aria-label="Menú de usuario">
+            <i data-lucide="more-vertical" class="w-4 h-4"></i>
+          </button>
+          <button id="close-sidebar" class="w-9 h-9 rounded-full bg-[#f3eef6] grid place-items-center hover:bg-[#e8dfec]" aria-label="Cerrar menú">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div id="user-menu-dropdown" class="hidden absolute top-20 right-4 bg-white rounded-2xl shadow-xl py-2 w-56 z-50 border border-[#e8dfec]">
+        <button id="user-menu-profile" class="w-full text-left px-4 py-2 hover:bg-[#f6f1f8] text-sm flex items-center gap-2">
+          <i data-lucide="user" class="w-4 h-4"></i> Mi perfil
+        </button>
+        <button id="user-menu-password" class="w-full text-left px-4 py-2 hover:bg-[#f6f1f8] text-sm flex items-center gap-2">
+          <i data-lucide="key" class="w-4 h-4"></i> Cambiar contraseña
+        </button>
+        <div class="my-1 border-t border-[#e8dfec]"></div>
+        <button id="user-menu-refresh" class="w-full text-left px-4 py-2 hover:bg-[#f6f1f8] text-sm flex items-center gap-2">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i> Actualizar datos
+        </button>
+        <button id="user-menu-logout" class="w-full text-left px-4 py-2 hover:bg-[#fff0f3] text-sm text-[#a43658] flex items-center gap-2">
+          <i data-lucide="log-out" class="w-4 h-4"></i> Cerrar sesión
+        </button>
+      </div>
+      
+      <nav class="flex-1 p-3 overflow-y-auto">
+        <p class="text-[10px] uppercase tracking-[.15em] font-bold text-[#756c7e] px-3 py-2">Principal</p>
+        <button class="sidebar-item active" data-view="catalogs"><i data-lucide="book-open" class="w-4 h-4"></i> Catálogos</button>
+        <button class="sidebar-item" data-view="all-products"><i data-lucide="package" class="w-4 h-4"></i> Todos los productos</button>
+        <button class="sidebar-item" data-view="daily-sales"><i data-lucide="trending-up" class="w-4 h-4"></i> Ventas del día</button>
+        <button class="sidebar-item" data-view="out-of-stock"><i data-lucide="alert-triangle" class="w-4 h-4"></i> Agotados <span id="out-of-stock-badge" class="ml-auto bg-[#a43658] text-white text-[10px] rounded-full px-2 py-0.5 hidden font-bold">0</span></button>
+        <button class="sidebar-item" data-view="low-stock"><i data-lucide="alert-circle" class="w-4 h-4"></i> Stock bajo <span id="low-stock-badge" class="ml-auto bg-[#d97706] text-white text-[10px] rounded-full px-2 py-0.5 hidden font-bold">0</span></button>
+        <button class="sidebar-item" data-view="cart"><i data-lucide="shopping-cart" class="w-4 h-4"></i> Pedido actual <span id="sidebar-cart-badge" class="ml-auto bg-[#c54571] text-white text-[10px] rounded-full px-2 py-0.5 hidden font-bold">0</span></button>
+        
+        <p class="text-[10px] uppercase tracking-[.15em] font-bold text-[#756c7e] px-3 py-2 mt-4">Herramientas</p>
+        <button class="sidebar-item" data-action="show-qr"><i data-lucide="qr-code" class="w-4 h-4"></i> Códigos QR</button>
+        <button class="sidebar-item" data-action="search-image"><i data-lucide="scan" class="w-4 h-4"></i> Buscar por imagen</button>
+        <button class="sidebar-item" data-action="scan-barcode"><i data-lucide="scan-line" class="w-4 h-4"></i> Escanear código</button>
+        <button class="sidebar-item admin-only" data-action="import-export"><i data-lucide="file-up" class="w-4 h-4"></i> Importar / Exportar</button>
+        <button class="sidebar-item admin-only" data-action="backup"><i data-lucide="shield-check" class="w-4 h-4"></i> Respaldo de datos</button>
+        <button class="sidebar-item admin-only" data-action="show-team"><i data-lucide="users" class="w-4 h-4"></i> Equipo</button>
+        <button class="sidebar-item" data-view="reports"><i data-lucide="bar-chart-3" class="w-4 h-4"></i> Informes de venta</button>
+        
+        <p class="text-[10px] uppercase tracking-[.15em] font-bold text-[#756c7e] px-3 py-2 mt-4">Soporte</p>
+        <button class="sidebar-item" data-action="show-help"><i data-lucide="help-circle" class="w-4 h-4"></i> Cómo usar la app</button>
+        <button class="sidebar-item" data-action="show-contacts"><i data-lucide="phone" class="w-4 h-4"></i> Contactos</button>
+        <button class="sidebar-item" data-action="show-welcome"><i data-lucide="tv-2" class="w-4 h-4"></i> Ver bienvenida</button>
+        
+        <p class="text-[10px] uppercase tracking-[.15em] font-bold text-[#756c7e] px-3 py-2 mt-4">Apariencia</p>
+        <button class="sidebar-item" data-action="toggle-dark-mode"><i data-lucide="moon" class="w-4 h-4"></i> Modo oscuro</button>
+        <button class="sidebar-item" data-action="toggle-sound"><i data-lucide="volume-2" class="w-4 h-4"></i> Sonido activado</button>
+      </nav>
+      <div class="p-3 border-t border-[#e8dfec]">
+        <p class="text-[10px] text-[#756c7e] px-3 py-2">v1.0 · PWA</p>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <section id="catalog-screen" class="screen active">
+        <header class="topbar">
+          <div class="page-inner py-4 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <button class="open-sidebar-btn menu-btn" aria-label="Abrir menú"><i data-lucide="menu" class="w-5 h-5"></i></button>
+              <div class="min-w-0">
+                <p class="uppercase tracking-[.16em] font-bold text-[11px] text-[#756c7e]">Explora</p>
+                <h1 class="hero-title mt-0.5 text-xl sm:text-2xl truncate">Nuestros Catálogos</h1>
+              </div>
+            </div>
+            <button id="open-cart-from-catalogs" type="button" class="relative w-11 h-11 grid place-items-center rounded-full bg-[#f0e8f7] text-[#7442a4] hover:bg-[#e0d4f0] transition flex-shrink-0 shadow-sm" aria-label="Abrir pedido"> 
+              <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+              <span id="cart-badge-a" class="hidden absolute -top-1 -right-1 bg-[#c54571] text-white text-[10px] rounded-full w-5 h-5 grid place-items-center font-bold">0</span> 
+            </button>
+          </div>
+          <div class="page-inner pb-4">
+            <label class="search rounded-full h-11 flex items-center gap-2 px-4"> 
+              <i data-lucide="search" class="w-4 h-4 text-[#7c7384] flex-shrink-0"></i>
+              <input id="global-search-input" type="text" class="bg-transparent outline-none min-w-0 flex-1 text-sm" placeholder="Buscar en todos los catálogos..."> 
+              <button id="global-search-clear" type="button" class="w-8 h-8 grid place-items-center rounded-full hover:bg-[#e8dfec] transition flex-shrink-0 hidden" title="Limpiar búsqueda">
+                <i data-lucide="x" class="w-4 h-4 text-[#756c7e]"></i>
+              </button>
+              <button type="button" onclick="openBarcodeScanner()" class="w-8 h-8 grid place-items-center rounded-full hover:bg-[#e8dfec] transition flex-shrink-0" title="Escanear código de barras">
+                <i data-lucide="scan-line" class="w-4 h-4 text-[#7c43ba]"></i>
+              </button>
+              <button id="global-search-camera" type="button" class="w-8 h-8 grid place-items-center rounded-full hover:bg-[#e8dfec] transition flex-shrink-0" title="Buscar por imagen">
+                <i data-lucide="camera" class="w-4 h-4 text-[#7c43ba]"></i>
+              </button>
+            </label>
+          </div>
+        </header>
+        <div class="page-inner pt-4 sm:pt-6">
+          <div id="catalog-grid" class="catalog-grid"></div>
+          <div id="global-search-results" class="global-search-results">
+            <div class="flex items-center justify-between mb-3 mt-6">
+              <h2 class="font-bold text-lg hero-title">Resultados de búsqueda</h2>
+              <button id="clear-global-search" type="button" class="text-sm font-bold text-[#7c43ba] hover:underline">Limpiar</button>
+            </div>
+            <div id="global-product-list" class="product-grid"></div>
+            <div id="global-no-results" class="hidden text-center rounded-3xl bg-white px-6 py-10 text-[#756c7e] mt-4">No encontramos productos con esa búsqueda.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="products-screen" class="screen">
+        <header class="topbar">
+          <div class="page-inner py-3">
+            <div class="flex items-center gap-2 sm:gap-3">
+              <button id="back-catalogs" type="button" class="back-btn" aria-label="Volver"><i data-lucide="chevron-left" class="w-5 h-5"></i></button> 
+              <label class="search rounded-full flex-1 h-10 flex items-center gap-2 px-3 min-w-0"> 
+                <i data-lucide="search" class="w-4 h-4 text-[#7c7384] flex-shrink-0"></i>
+                <input id="search-input" type="search" class="bg-transparent outline-none min-w-0 flex-1 text-sm" placeholder="Buscar en este catálogo..."> 
+                <button id="search-input-clear" type="button" class="w-7 h-7 grid place-items-center rounded-full hover:bg-[#e8dfec] transition flex-shrink-0 hidden" title="Limpiar búsqueda">
+                  <i data-lucide="x" class="w-4 h-4 text-[#756c7e]"></i>
+                </button>
+                <button id="search-by-image" type="button" class="w-7 h-7 grid place-items-center rounded-full hover:bg-[#e8dfec] transition flex-shrink-0" title="Buscar por imagen"><i data-lucide="camera" class="w-4 h-4 text-[#7c43ba]"></i></button>
+                <button type="button" onclick="openBarcodeScanner()" class="w-7 h-7 grid place-items-center rounded-full hover:bg-[#e8dfec] transition flex-shrink-0" title="Escanear código de barras"><i data-lucide="scan-line" class="w-4 h-4 text-[#7c43ba]"></i></button>
+              </label> 
+              <button id="client-mode-btn" type="button" class="w-10 h-10 rounded-full grid place-items-center hover:bg-violet-50 flex-shrink-0 text-[#7c43ba]" title="Modo cliente"><i data-lucide="eye-off" class="w-5 h-5"></i></button>
+              <button id="cart-button" type="button" class="relative w-10 h-10 grid place-items-center rounded-full hover:bg-violet-50 flex-shrink-0" aria-label="Pedido"><i data-lucide="shopping-cart" class="w-[18px] h-[18px]"></i><span id="cart-badge-b" class="hidden absolute -top-1 -right-1 bg-[#c54571] text-white text-[10px] rounded-full w-5 h-5 grid place-items-center font-bold">0</span></button>
+            </div>
+          </div>
+        </header>
+        <div class="page-inner pt-6 sm:pt-7">
+          <section class="flex items-end justify-between gap-3 mb-5 flex-wrap">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <p id="active-catalog-label" class="text-[11px] uppercase tracking-[.15em] font-bold text-[#7b43ab]"></p>
+                <span class="client-mode-badge"><i data-lucide="user" class="w-3 h-3"></i> Modo cliente</span>
+              </div>
+              <h1 id="active-catalog-title" class="hero-title font-bold text-2xl sm:text-3xl mt-1 break-words"></h1>
+            </div>
+            <div class="flex gap-2 flex-shrink-0">
+              <span id="product-count" class="rounded-full bg-[#eee6f6] text-[#70429c] px-3 py-1.5 text-xs font-bold whitespace-nowrap">0 productos</span>
+              <div class="catalog-inside-menu relative">
+                <button id="catalog-inside-menu-btn" type="button" class="w-9 h-9 rounded-full grid place-items-center hover:bg-violet-50 text-[#7c43ba] shadow-sm bg-white" title="Opciones del catálogo">
+                  <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                </button>
+                <div id="catalog-inside-dropdown" class="catalog-inside-dropdown">
+                  <button class="dropdown-item" data-catalog-action="share"><i data-lucide="share-2" class="w-4 h-4"></i> Compartir catálogo</button>
+                  <button class="dropdown-item admin-only" data-catalog-action="edit"><i data-lucide="pencil" class="w-4 h-4"></i> Editar catálogo</button>
+                  <button class="dropdown-item admin-only" data-catalog-action="clear"><i data-lucide="trash" class="w-4 h-4"></i> <span id="clear-catalog-count">Borrar productos</span></button>
+                  <button class="dropdown-item danger admin-only" data-catalog-action="delete"><i data-lucide="x-circle" class="w-4 h-4"></i> Eliminar catálogo</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-6">
+            <article class="stat-card rounded-2xl p-3 sm:p-4"><i data-lucide="package" class="w-4 h-4 text-[#7543a8] mb-2"></i><p id="stock-total" class="font-bold text-base sm:text-lg">0</p><p class="text-[10px] sm:text-[11px] text-[#756c7e]">En stock</p></article>
+            <article class="stat-card rounded-2xl p-3 sm:p-4"><i data-lucide="shopping-bag" class="w-4 h-4 text-[#be416d] mb-2"></i><p id="sold-total" class="font-bold text-base sm:text-lg">0</p><p class="text-[10px] sm:text-[11px] text-[#756c7e]">Vendidos</p></article>
+            <article class="stat-card rounded-2xl p-3 sm:p-4 sensitive-data border-l-4 border-l-[#23805d]"><i data-lucide="trending-up" class="w-4 h-4 text-[#23805d] mb-2"></i><p id="today-sales" class="font-bold text-base sm:text-lg text-[#23805d]">0</p><p class="text-[10px] sm:text-[11px] text-[#756c7e]">Ventas hoy</p></article>
+            <article class="stat-card rounded-2xl p-3 sm:p-4 sensitive-data border-l-4 border-l-[#7c43ba]"><i data-lucide="dollar-sign" class="w-4 h-4 text-[#7c43ba] mb-2"></i><p id="today-revenue" class="font-bold text-base sm:text-lg text-[#7c43ba]">0</p><p class="text-[10px] sm:text-[11px] text-[#756c7e]">Ingresos hoy</p></article>
+          </section>
+          
+          <section class="grid grid-cols-2 gap-2 sm:gap-3 mb-6 sensitive-data">
+            <article class="stat-card rounded-2xl p-3 sm:p-4"><i data-lucide="target" class="w-4 h-4 text-[#23805d] mb-2"></i><p id="profit-total" class="font-bold text-base sm:text-lg text-[#23805d]">0</p><p class="text-[10px] sm:text-[11px] text-[#756c7e]">Ganancia potencial</p></article>
+            <article class="stat-card rounded-2xl p-3 sm:p-4"><i data-lucide="trophy" class="w-4 h-4 text-[#d97706] mb-2"></i><p id="realized-profit" class="font-bold text-base sm:text-lg text-[#d97706]">0</p><p class="text-[10px] sm:text-[11px] text-[#756c7e]">Ganancia obtenida</p></article>
+          </section>
+
+          <div id="product-list" class="product-grid"></div>
+          <div id="empty-products" class="hidden text-center rounded-3xl bg-white border border-dashed border-[#dacde2] px-6 py-12"><i data-lucide="package-plus" class="w-8 h-8 mx-auto text-[#7c43ba] mb-3"></i><h3 class="font-bold">Sin productos aún</h3><p class="mt-2 text-sm text-[#756c7e]">Toca el botón + para añadir</p></div>
+          <div id="no-results" class="hidden text-center rounded-3xl bg-white px-6 py-10 text-[#756c7e]">No encontramos productos con esa búsqueda.</div>
+        </div>
+      </section>
+
+      <section id="daily-sales-screen" class="screen">
+        <header class="topbar">
+          <div class="page-inner py-4 flex items-center gap-3">
+            <button class="open-sidebar-btn menu-btn" aria-label="Abrir menú"><i data-lucide="menu" class="w-5 h-5"></i></button>
+            <div><p class="uppercase tracking-[.16em] font-bold text-[11px] text-[#23805d]">Hoy</p><h1 class="hero-title mt-0.5 text-xl sm:text-2xl">Ventas del día</h1></div>
+          </div>
+        </header>
+        <div class="page-inner pt-6 sm:pt-8">
+          <section class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <article class="stat-card rounded-2xl p-4"><i data-lucide="receipt" class="w-4 h-4 text-[#23805d] mb-2"></i><p id="daily-sales-count" class="font-bold text-xl">0</p><p class="text-[11px] text-[#756c7e]">Ventas hoy</p></article>
+            <article class="stat-card rounded-2xl p-4"><i data-lucide="dollar-sign" class="w-4 h-4 text-[#7c43ba] mb-2"></i><p id="daily-sales-revenue" class="font-bold text-xl">0</p><p class="text-[11px] text-[#756c7e]">Ingresos</p></article>
+            <article class="stat-card rounded-2xl p-4"><i data-lucide="credit-card" class="w-4 h-4 text-[#3875a5] mb-2"></i><p id="daily-sales-cash" class="font-bold text-xl">0</p><p class="text-[11px] text-[#756c7e]">Efectivo</p></article>
+            <article class="stat-card rounded-2xl p-4"><i data-lucide="qr-code" class="w-4 h-4 text-[#7c43ba] mb-2"></i><p id="daily-sales-qr" class="font-bold text-xl">0</p><p class="text-[11px] text-[#756c7e]">QR</p></article>
+          </section>
+          <!-- FIX: Añadida stat-card de ganancia del día que faltaba -->
+          <section class="grid grid-cols-2 gap-3 mb-6 sensitive-data">
+            <article class="stat-card rounded-2xl p-4 border-l-4 border-l-[#166534]"><i data-lucide="trending-up" class="w-4 h-4 text-[#166534] mb-2"></i><p id="daily-sales-profit" class="font-bold text-xl text-[#166534]">0</p><p class="text-[11px] text-[#756c7e]">Ganancia hoy</p></article>
+          </section>
+          <button id="btn-generate-daily-table" class="w-full mb-4 py-3 rounded-xl bg-[#7c43ba] text-white font-bold flex items-center justify-center gap-2"><i data-lucide="table" class="w-4 h-4"></i> Generar tabla de cierre</button>
+          <h2 class="font-bold text-lg mb-3 hero-title">Historial de hoy</h2>
+          <div id="daily-sales-list" class="space-y-2"></div>
+          <div id="no-daily-sales" class="hidden text-center rounded-3xl bg-white border border-dashed border-[#dacde2] px-6 py-12"><i data-lucide="receipt" class="w-8 h-8 mx-auto text-[#7c43ba] mb-3"></i><h3 class="font-bold">Sin ventas hoy</h3><p class="mt-2 text-sm text-[#756c7e]">Las ventas de hoy aparecerán aquí</p></div>
+        </div>
+      </section>
+
+      <section id="low-stock-screen" class="screen">
+        <header class="topbar">
+          <div class="page-inner py-4 flex items-center gap-3">
+            <button class="open-sidebar-btn menu-btn" aria-label="Abrir menú"><i data-lucide="menu" class="w-5 h-5"></i></button>
+            <div><p class="uppercase tracking-[.16em] font-bold text-[11px] text-[#d97706]">Atención</p><h1 class="hero-title mt-0.5 text-xl sm:text-2xl">Productos con stock bajo</h1></div>
+          </div>
+        </header>
+        <div class="page-inner pt-6 sm:pt-8">
+          <div class="p-4 rounded-2xl bg-gradient-to-br from-[#fffbeb] to-[#fff] border border-[#fde68a] mb-5 flex items-start gap-3">
+            <i data-lucide="alert-circle" class="w-5 h-5 text-[#d97706] flex-shrink-0 mt-0.5"></i>
+            <div>
+              <p class="font-bold text-sm text-[#d97706]">Reposición recomendada</p>
+              <p class="text-xs text-[#756c7e] mt-1">Productos con 3 unidades o menos. Considera reponer pronto.</p>
+            </div>
+          </div>
+          <div id="low-stock-list" class="space-y-3"></div>
+          <div id="no-low-stock" class="hidden text-center rounded-3xl bg-white border border-dashed border-[#dacde2] px-6 py-12"><i data-lucide="check-circle" class="w-8 h-8 mx-auto text-[#23805d] mb-3"></i><h3 class="font-bold">¡Todo bien!</h3><p class="mt-2 text-sm text-[#756c7e]">No hay productos con stock bajo.</p></div>
+        </div>
+      </section>
+
+      <section id="out-of-stock-screen" class="screen">
+        <header class="topbar">
+          <div class="page-inner py-4 flex items-center gap-3">
+            <button class="open-sidebar-btn menu-btn" aria-label="Abrir menú"><i data-lucide="menu" class="w-5 h-5"></i></button>
+            <div><p class="uppercase tracking-[.16em] font-bold text-[11px] text-[#a43658]">Reponer</p><h1 class="hero-title mt-0.5 text-xl sm:text-2xl">Productos agotados</h1></div>
+          </div>
+        </header>
+        <div class="page-inner pt-6 sm:pt-8">
+          <div class="p-4 rounded-2xl bg-gradient-to-br from-[#fff5f7] to-[#fff] border border-[#f5d5dc] mb-5 flex items-start gap-3"><i data-lucide="alert-triangle" class="w-5 h-5 text-[#a43658] flex-shrink-0 mt-0.5"></i><div><p class="font-bold text-sm text-[#a43658]">Lista de reposición</p><p class="text-xs text-[#756c7e] mt-1">Productos sin stock que necesitas volver a comprar.</p></div></div>
+          <div id="out-of-stock-list" class="space-y-3"></div>
+          <div id="no-out-of-stock" class="hidden text-center rounded-3xl bg-white border border-dashed border-[#dacde2] px-6 py-12"><i data-lucide="check-circle" class="w-8 h-8 mx-auto text-[#23805d] mb-3"></i><h3 class="font-bold">¡Todo en orden!</h3><p class="mt-2 text-sm text-[#756c7e]">No hay productos agotados.</p></div>
+          <button id="export-out-of-stock" class="hidden mt-5 btn-warning px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 mx-auto"><i data-lucide="file-down" class="w-4 h-4"></i> Exportar lista de reposición</button>
+        </div>
+      </section>
+
+      <section id="reports-screen" class="screen">
+        <header class="topbar">
+          <div class="page-inner py-4 flex items-center gap-3">
+            <button class="open-sidebar-btn menu-btn" aria-label="Abrir menú"><i data-lucide="menu" class="w-5 h-5"></i></button>
+            <div><p class="uppercase tracking-[.16em] font-bold text-[11px] text-[#756c7e]">Análisis</p><h1 class="hero-title mt-0.5 text-xl sm:text-2xl">Informes de venta</h1></div>
+          </div>
+        </header>
+        <div class="page-inner pt-6 sm:pt-8">
+          <section class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <article class="stat-card rounded-2xl p-4"><i data-lucide="receipt" class="w-4 h-4 text-[#7543a8] mb-2"></i><p id="report-sales-count" class="font-bold text-xl">0</p><p class="text-[11px] text-[#756c7e]">Ventas totales</p></article>
+            <article class="stat-card rounded-2xl p-4"><i data-lucide="dollar-sign" class="w-4 h-4 text-[#23805d] mb-2"></i><p id="report-total-revenue" class="font-bold text-xl">0</p><p class="text-[11px] text-[#756c7e]">Ingresos</p></article>
+            <article class="stat-card rounded-2xl p-4"><i data-lucide="trending-up" class="w-4 h-4 text-[#23805d] mb-2"></i><p id="report-total-profit" class="font-bold text-xl">0</p><p class="text-[11px] text-[#756c7e]">Ganancia real</p></article>
+            <article class="stat-card rounded-2xl p-4"><i data-lucide="target" class="w-4 h-4 text-[#be416d] mb-2"></i><p id="report-avg-profit" class="font-bold text-xl">0</p><p class="text-[11px] text-[#756c7e]">Ganancia promedio</p></article>
+          </section>
+          <div class="bg-white rounded-2xl p-4 mb-6 border border-[#ede7f0]">
+            <h3 class="font-bold text-sm mb-3">Ventas de los últimos 7 días</h3>
+            <div class="chart-container"><canvas id="sales-chart"></canvas></div>
+          </div>
+          <h2 class="font-bold text-lg mb-3 hero-title">Historial de ventas</h2>
+          <div id="sales-list" class="space-y-2"></div>
+          <div id="no-sales" class="hidden text-center rounded-3xl bg-white border border-dashed border-[#dacde2] px-6 py-12"><i data-lucide="receipt" class="w-8 h-8 mx-auto text-[#7c43ba] mb-3"></i><h3 class="font-bold">Sin ventas aún</h3><p class="mt-2 text-sm text-[#756c7e]">Registra ventas desde el detalle de cada producto</p></div>
+          <div class="mt-6 flex gap-2 flex-wrap">
+            <button id="export-sales-xlsx" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar Excel</button>
+            <button id="export-sales-csv" class="btn-ghost px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2"><i data-lucide="file-text" class="w-4 h-4"></i> Exportar CSV</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="swipe-indicator" class="swipe-indicator"></div>
+  <nav class="bottom-nav fixed bottom-0 inset-x-0 z-30 h-16 grid grid-cols-6 items-center text-[#716879] lg:hidden" aria-label="Navegación">
+    <button class="nav-action grid place-items-center gap-0.5 text-[10px]" data-view="show-qr" type="button"><i data-lucide="qr-code" class="w-5 h-5"></i>QR</button> 
+    <button class="nav-action grid place-items-center gap-0.5 text-[10px]" data-view="daily-sales" type="button"><i data-lucide="trending-up" class="w-5 h-5"></i>Ventas</button> 
+    <button class="nav-action active-nav grid place-items-center gap-0.5 text-[10px] text-[#7c43ba] font-bold" data-view="catalogs" type="button"><i data-lucide="book-open" class="w-6 h-6"></i>Catálogo</button> 
+    <button class="nav-action grid place-items-center gap-0.5 text-[10px]" data-view="quick-scan" type="button"><i data-lucide="shopping-cart" class="w-5 h-5"></i>Ventas</button>
+    <button class="nav-action grid place-items-center gap-0.5 text-[10px]" data-view="reports" type="button"><i data-lucide="bar-chart-3" class="w-5 h-5"></i>Informes</button> 
+    <button class="nav-action admin-only grid place-items-center gap-0.5 text-[10px]" data-action="open-datos-menu" type="button"><i data-lucide="database" class="w-5 h-5"></i>Datos</button>
+  </nav>
+
+  <div id="bottom-datos-dropdown" class="hidden fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-white rounded-2xl shadow-2xl py-2 w-64 z-50 border border-[#e8dfec]">
+    <button id="bottom-datos-crear-catalogo" class="w-full text-left px-4 py-2.5 hover:bg-[#f6f1f8] text-sm flex items-center gap-2 border-b border-[#e8dfec]">
+      <i data-lucide="folder-plus" class="w-4 h-4 text-[#7c43ba]"></i> Crear catálogo
+    </button>
+    <button id="bottom-datos-crear-producto" class="w-full text-left px-4 py-2.5 hover:bg-[#f6f1f8] text-sm flex items-center gap-2 border-b border-[#e8dfec]">
+      <i data-lucide="package-plus" class="w-4 h-4 text-[#23805d]"></i> Añadir producto
+    </button>
+    <button id="bottom-datos-importar" class="w-full text-left px-4 py-2.5 hover:bg-[#f6f1f8] text-sm flex items-center gap-2 border-b border-[#e8dfec]">
+      <i data-lucide="upload" class="w-4 h-4 text-[#3875a5]"></i> Importar archivo
+    </button>
+    <button id="bottom-datos-exportar" class="w-full text-left px-4 py-2.5 hover:bg-[#f6f1f8] text-sm flex items-center gap-2 border-b border-[#e8dfec]">
+      <i data-lucide="download" class="w-4 h-4 text-[#d97706]"></i> Exportar datos
+    </button>
+    <button id="bottom-datos-compartir" class="w-full text-left px-4 py-2.5 hover:bg-[#f6f1f8] text-sm flex items-center gap-2">
+      <i data-lucide="share-2" class="w-4 h-4 text-[#25D366]"></i> Compartir archivo
+    </button>
+  </div>
+
+  <input id="import-catalog-file" type="file" accept=".json,.csv,.xlsx,.xls,.pdf" class="hidden">
+
+  <!-- MODAL: DETALLE DE PRODUCTO -->
+  <div id="detail-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-lg bg-white rounded-3xl overflow-hidden max-h-[92vh] overflow-y-auto">
+      <div class="relative">
+        <img id="detail-image" class="w-full h-64 object-cover bg-[#eee5f5]" alt="">
+        <button id="close-detail" type="button" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur grid place-items-center hover:bg-white shadow-lg" aria-label="Cerrar"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="p-6">
+        <div class="flex justify-between gap-4 items-start">
+          <div class="min-w-0 flex-1">
+            <p id="detail-brand" class="text-xs font-bold text-[#7b43a8] uppercase tracking-[.12em]"></p>
+            <h2 id="detail-name" class="hero-title text-2xl sm:text-3xl font-bold mt-1 break-words"></h2>
+            <p id="detail-offer" class="hidden mt-2 px-3 py-1 rounded-full bg-[#fef3c7] text-[#92400e] text-sm font-bold inline-block"></p>
+          </div>
+          <div class="relative flex-shrink-0 sensitive-data">
+            <button id="detail-more-btn" type="button" class="w-10 h-10 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
+            <div id="detail-dropdown" class="dropdown-menu">
+              <button class="dropdown-item" data-action="duplicate"><i data-lucide="copy" class="w-4 h-4"></i> Duplicar</button>
+              <button class="dropdown-item" data-action="print-barcode"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir código</button>
+              <button class="dropdown-item" data-action="request-stock"><i data-lucide="package-plus" class="w-4 h-4"></i> Solicitar stock</button>
+              <button class="dropdown-item" data-action="share"><i data-lucide="share-2" class="w-4 h-4"></i> Compartir</button>
+              <div class="my-1 border-t border-[#e8dfec]"></div>
+              <button class="dropdown-item danger admin-only" data-action="delete"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</button>
+            </div>
+          </div>
+        </div>
+        <p id="detail-meta" class="text-sm text-[#756c7e] mt-2"></p>
+        <p id="detail-description" class="text-sm leading-relaxed mt-4 text-[#4a3f55]"></p>
+        <div class="mt-6 p-5 rounded-2xl bg-gradient-to-br from-[#f6f1f8] to-[#ede1f8] text-center shadow-inner">
+          <p class="text-xs uppercase tracking-[.15em] font-bold text-[#704397]">Precio de venta</p>
+          <p id="detail-sale-price" class="price-highlight mt-2">0.00 <span class="currency-tag">USD</span></p>
+          <p id="detail-min-price" class="text-xs text-[#756c7e] mt-1">Mínimo: <span class="font-bold text-[#a43658]">0.00 USD</span></p>
+        </div>
+        <div class="grid grid-cols-1 gap-2 sm:gap-3 mt-4 sensitive-data">
+          <div class="rounded-2xl bg-white border border-[#ede7f0] p-3 text-center shadow-sm">
+            <p class="text-[10px] text-[#746d7d] uppercase tracking-wide">Costo</p>
+            <p id="detail-cost-price" class="font-bold mt-1 text-sm">0</p>
+          </div>
+        </div>
+        <div class="rounded-2xl bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] border border-[#bbf7d0] p-3 text-center shadow-sm mt-3 sensitive-data">
+          <p class="text-[10px] text-[#166534] uppercase tracking-wide font-bold">Ganancia por unidad</p>
+          <p id="detail-profit" class="font-bold mt-1 text-lg text-[#166534]">0</p>
+        </div>
+        <div class="flex gap-2 mt-6">
+          <button id="detail-sold" type="button" class="flex-1 rounded-xl py-3 btn-success font-bold text-sm flex items-center justify-center gap-1.5"><i data-lucide="check-circle" class="w-4 h-4"></i> Vender</button>
+          <button id="detail-pencil" type="button" class="flex-1 rounded-xl py-3 btn-ghost font-bold text-sm sensitive-data">Editar</button>
+          <button id="detail-cart" type="button" class="flex-1 rounded-xl py-3 btn-primary font-bold text-sm">+ Carrito</button>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <!-- MODAL: REGISTRAR VENTA -->
+  <div id="sale-modal" class="modal fixed inset-0 z-[60] bg-[#1e1427]/70 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl max-h-[90vh] overflow-y-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4"><h2 class="font-bold text-xl hero-title">Registrar venta</h2><button id="close-sale-modal" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+        <div class="p-4 rounded-2xl bg-[#f6f1f8] mb-4"><p class="text-xs text-[#756c7e] uppercase tracking-wide">Producto</p><p id="sale-product-name" class="font-bold text-lg mt-1 break-words"></p></div>
+        <div class="bg-[#f0fdf4] p-4 rounded-2xl mb-4 text-center border border-[#bbf7d0]">
+          <p class="text-xs text-[#166534] font-bold uppercase">Total a cobrar</p>
+          <p id="sale-display-total" class="text-4xl font-bold text-[#166534] mt-1">$0.00</p>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="block text-xs font-bold mb-1">Cantidad</label>
+            <div class="flex items-center border border-[#e8dfec] rounded-xl overflow-hidden">
+              <button type="button" id="sale-qty-minus" class="px-3 py-2 bg-[#f6f1f8]"><i data-lucide="minus" class="w-4 h-4"></i></button>
+              <input id="sale-quantity" type="number" min="1" value="1" class="w-full text-center outline-none py-2">
+              <button type="button" id="sale-qty-plus" class="px-3 py-2 bg-[#f6f1f8]"><i data-lucide="plus" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold mb-1">Precio Unit.</label>
+            <input id="sale-actual-price" type="number" min="0" step="0.01" class="w-full border border-[#e8dfec] rounded-xl p-2 outline-none focus:border-[#7c43ba]">
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="block text-xs font-bold mb-1">Método de pago</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" class="pay-method-btn py-2 rounded-xl border-2 border-[#7c43ba] bg-[#f6f1f8] font-bold text-sm" data-method="Efec.">Efec.</button>
+            <button type="button" class="pay-method-btn py-2 rounded-xl border-2 border-[#e8dfec] text-[#756c7e] font-bold text-sm" data-method="QR">QR</button>
+          </div>
+        </div>
+        <div id="sale-profit-preview" class="mb-4 p-3 rounded-xl bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] border border-[#bbf7d0]">
+          <div class="flex justify-between items-center"><span class="text-sm font-bold text-[#166534]">Ganancia total:</span><span id="sale-profit-value" class="font-bold text-lg text-[#166534]">0.00 USD</span></div>
+        </div>
+        <div class="flex gap-2 sticky bottom-0 bg-white pt-2">
+          <button id="cancel-sale" type="button" class="flex-1 rounded-xl py-3 btn-ghost font-bold">Cancelar</button>
+          <button id="confirm-sale" type="button" class="flex-1 rounded-xl py-3 btn-success font-bold flex items-center justify-center gap-1.5"><i data-lucide="check" class="w-4 h-4"></i> Confirmar</button>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <!-- MODAL: CARRITO -->
+  <div id="cart-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6 max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center mb-4"><h2 class="font-bold text-xl hero-title">Tu Pedido</h2><button class="close-cart w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]" type="button"><i data-lucide="x"></i></button></div>
+      <div id="cart-list" class="flex-1 overflow-y-auto space-y-3 pr-1"></div>
+      <p id="cart-empty" class="text-center py-8 text-sm text-[#756c7e] hidden">El carrito está vacío.</p>
+      <div id="cart-footer" class="hidden border-t border-[#ede7f0] mt-5 pt-4 space-y-3">
+        <div class="flex justify-between font-bold text-lg"><span>Total</span><span id="cart-total" class="hero-title text-[#7c43ba]">0</span></div>
+        <button id="checkout-whatsapp" type="button" class="w-full py-3.5 rounded-xl font-bold btn-whatsapp flex items-center justify-center gap-2"><i data-lucide="message-circle" class="w-5 h-5"></i> Enviar por WhatsApp</button>
+        <button id="checkout-pdf" type="button" class="w-full py-3 rounded-xl font-bold btn-primary flex items-center justify-center gap-2"><i data-lucide="file-text" class="w-5 h-5"></i> Descargar PDF</button>
+        <button id="checkout-clear" type="button" class="w-full py-2 rounded-xl text-sm text-[#756c7e] hover:bg-[#f6f1f8]">Vaciar carrito</button>
+      </div>
+    </article>
+  </div>
+
+  <!-- DRAWER: FORMULARIO DE PRODUCTO -->
+  <div id="drawer-backdrop" class="backdrop fixed inset-0 bg-[#201429]/40 z-40"></div>
+  <aside id="form-drawer" class="drawer fixed top-0 right-0 bottom-0 z-50 bg-white w-[min(500px,100vw)] overflow-y-auto shadow-2xl">
+    <form id="product-form" class="p-6 sm:p-8">
+      <div class="flex justify-between gap-3 mb-7">
+        <div><p class="text-[11px] uppercase tracking-[.15em] font-bold text-[#756c7e]">Gestión</p><h2 id="form-title" class="font-bold text-xl mt-1 hero-title">Añadir producto</h2></div>
+        <button id="close-form" type="button" class="w-10 h-10 rounded-full bg-[#f3eef6] grid place-items-center hover:bg-[#e8dfec]" aria-label="Cerrar"><i data-lucide="x"></i></button>
+      </div>
+      <div class="space-y-4">
+        <div><label class="block font-bold text-sm mb-1.5">Nombre *</label><input id="product-name" required maxlength="80" class="w-full input-field rounded-xl p-3" type="text"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block font-bold text-sm mb-1.5">Marca *</label><input id="product-brand" required maxlength="50" class="w-full input-field rounded-xl p-3" type="text"></div>
+          <div><label class="block font-bold text-sm mb-1.5">Tipo *</label><input id="product-type" required maxlength="50" class="w-full input-field rounded-xl p-3" type="text" placeholder="Ej: Perfume"></div>
+        </div>
+        <div><label class="block font-bold text-sm mb-1.5">Categoría</label><input id="product-category" maxlength="50" class="w-full input-field rounded-xl p-3" type="text" placeholder="Ej: Perfumes, Ropa..."></div>
+        <div>
+          <label class="block font-bold text-sm mb-1.5">Código de barras (opcional)</label>
+          <div class="flex gap-2">
+            <input id="product-barcode" maxlength="30" class="flex-1 input-field rounded-xl p-3" type="text" placeholder="Ej: 7501234567890">
+            <button type="button" id="scan-barcode-btn" class="btn-ghost rounded-xl px-4 flex items-center gap-1"><i data-lucide="scan-line" class="w-4 h-4"></i> Escanear</button>
+          </div>
+        </div>
+        <div><label class="block font-bold text-sm mb-1.5">Descripción</label><textarea id="product-description" maxlength="300" rows="3" class="w-full input-field rounded-xl p-3"></textarea></div>
+        <div class="p-4 rounded-2xl bg-gradient-to-br from-[#f6f1f8] to-[#faf7fb] border border-[#ede7f0]">
+          <p class="text-xs uppercase tracking-[.15em] font-bold text-[#704397] mb-3">Precios (USD)</p>
+          <div class="grid grid-cols-3 gap-2">
+            <div><label class="block font-bold text-xs mb-1.5">Precio venta máx. *</label><input id="sale-price" required min="0" step="0.01" class="w-full input-field rounded-xl p-2" type="number"></div>
+            <div><label class="block font-bold text-xs mb-1.5">Precio venta mín. *</label><input id="min-price" required min="0" step="0.01" class="w-full input-field rounded-xl p-2" type="number"></div>
+            <div><label class="block font-bold text-xs mb-1.5">Costo *</label><input id="cost-price" required min="0" step="0.01" class="w-full input-field rounded-xl p-2" type="number"></div>
+          </div>
+          <div id="profit-preview" class="mt-3 p-2 rounded-lg bg-white/60 text-center"><span class="text-xs text-[#756c7e]">Ganancia por unidad: </span><span id="profit-preview-value" class="font-bold text-[#166534]">0.00 USD</span></div>
+        </div>
+        <div>
+          <label class="block font-bold text-sm mb-1.5">Oferta (opcional)</label>
+          <input id="product-offer" maxlength="50" class="w-full input-field rounded-xl p-3" type="text" placeholder="Ej: 2x15, 3x20, Lleve 3 pague 2">
+          <p class="text-xs text-[#756c7e] mt-1">Texto que aparecerá en el producto para indicar promociones</p>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block font-bold text-sm mb-1.5">Stock *</label><input id="product-stock" required min="0" value="1" class="w-full input-field rounded-xl p-3" type="number"></div>
+          <div>
+            <label class="block font-bold text-sm mb-1.5">Imagen del producto</label>
+            <div class="flex gap-2">
+              <label class="flex-1 btn-ghost rounded-xl px-3 py-2 flex items-center justify-center gap-1 cursor-pointer text-xs">
+                <i data-lucide="image" class="w-4 h-4"></i> Galería
+                <input id="product-image" accept="image/*" class="hidden" type="file">
+              </label>
+              <button type="button" id="camera-image-btn" class="flex-1 btn-ghost rounded-xl px-3 py-2 flex items-center justify-center gap-1 text-xs">
+                <i data-lucide="camera" class="w-4 h-4"></i> Cámara
+              </button>
+            </div>
+          </div>
+        </div>
+        <img id="image-preview" class="image-preview" alt="">
+        <p id="form-message" class="hidden rounded-xl p-3 text-sm" role="status"></p>
+        <button id="save-product" type="submit" class="w-full py-3.5 rounded-xl font-bold btn-primary">Guardar producto</button>
+      </div>
+    </form>
+  </aside>
+
+  <!-- MODAL: CREAR CATÁLOGO -->
+  <div id="create-catalog-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6">
+      <div class="flex justify-between items-center mb-5"><h2 class="font-bold text-xl hero-title">Nuevo Catálogo</h2><button id="close-create-catalog" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <p class="text-sm text-[#756c7e]">¿Cómo quieres crear el catálogo?</p>
+      <div class="grid grid-cols-2 gap-3 mt-5">
+        <button id="create-catalog-manual" class="option-card"><i data-lucide="pencil" class="w-8 h-8"></i><p class="font-bold text-sm text-center">Crear manual</p><p class="text-xs text-[#756c7e] text-center">Diseña tu catálogo</p></button>
+        <button id="create-catalog-file" class="option-card"><i data-lucide="file-up" class="w-8 h-8"></i><p class="font-bold text-sm text-center">Desde archivo</p><p class="text-xs text-[#756c7e] text-center">Excel, CSV o PDF</p></button>
+      </div>
+    </article>
+  </div>
+
+  <!-- MODAL: EDITAR CATÁLOGO -->
+  <div id="catalog-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm" onclick="if(event.target===this) closeModal('catalog-modal')">
+    <form id="catalog-form" class="modal-card w-full max-w-md bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto relative" onclick="event.stopPropagation()">
+      <button type="button" onclick="closeModal('catalog-modal')" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec] z-10"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <h2 id="catalog-modal-title" class="font-bold text-xl hero-title pr-10">Nuevo Catálogo</h2>
+      <p class="text-sm mt-2 text-[#756c7e]">Crea una nueva categoría para organizar tus productos.</p>
+      <label class="block text-sm font-bold mt-5 mb-1">Nombre del catálogo *</label>
+      <input id="catalog-name" required maxlength="40" class="w-full input-field rounded-xl p-3" placeholder="Ej: Ropa deportiva">
+      <label class="block text-sm font-bold mt-4 mb-1">Etiqueta (corta)</label>
+      <input id="catalog-label" maxlength="20" class="w-full input-field rounded-xl p-3" placeholder="Ej: DEPORTES">
+      <label class="block text-sm font-bold mt-4 mb-1">Color destacado</label>
+      <div class="flex gap-2 flex-wrap">
+        <input type="radio" name="cat-color" value="#7c43ba" checked class="hidden peer/c1" id="c1"><label for="c1" class="w-10 h-10 rounded-full bg-[#7c43ba] cursor-pointer peer-checked/c1:ring-4 ring-[#7c43ba]/30 shadow-md"></label>
+        <input type="radio" name="cat-color" value="#be416d" class="hidden peer/c2" id="c2"><label for="c2" class="w-10 h-10 rounded-full bg-[#be416d] cursor-pointer peer-checked/c2:ring-4 ring-[#be416d]/30 shadow-md"></label>
+        <input type="radio" name="cat-color" value="#23805d" class="hidden peer/c3" id="c3"><label for="c3" class="w-10 h-10 rounded-full bg-[#23805d] cursor-pointer peer-checked/c3:ring-4 ring-[#23805d]/30 shadow-md"></label>
+        <input type="radio" name="cat-color" value="#3875a5" class="hidden peer/c4" id="c4"><label for="c4" class="w-10 h-10 rounded-full bg-[#3875a5] cursor-pointer peer-checked/c4:ring-4 ring-[#3875a5]/30 shadow-md"></label>
+        <input type="radio" name="cat-color" value="#d97706" class="hidden peer/c5" id="c5"><label for="c5" class="w-10 h-10 rounded-full bg-[#d97706] cursor-pointer peer-checked/c5:ring-4 ring-[#d97706]/30 shadow-md"></label>
+        <input type="radio" name="cat-color" value="#6b7280" class="hidden peer/c6" id="c6"><label for="c6" class="w-10 h-10 rounded-full bg-[#6b7280] cursor-pointer peer-checked/c6:ring-4 ring-[#6b7280]/30 shadow-md"></label>
+      </div>
+      <label class="block text-sm font-bold mt-4 mb-1">Imagen de portada</label>
+      <input id="catalog-image" accept="image/*" class="w-full input-field rounded-xl p-2 text-xs" type="file">
+      <img id="catalog-image-preview" class="image-preview" alt="">
+      <div class="flex gap-3 mt-6">
+        <button id="close-catalog-modal" type="button" class="flex-1 btn-ghost rounded-xl py-3 font-bold">Cancelar</button>
+        <button type="submit" class="flex-1 btn-primary rounded-xl py-3 font-bold">Guardar</button>
+      </div>
+      <button id="delete-catalog-btn" type="button" class="hidden w-full mt-3 rounded-xl py-2 text-sm font-bold text-[#a43658] hover:bg-[#fff0f3]">Eliminar este catálogo</button>
+    </form>
+  </div>
+
+  <!-- FIX: MODAL IMPORTAR - CERRADO CORRECTAMENTE -->
+  <!-- MODAL COMBINADO: IMPORTAR / EXPORTAR -->
+  <div id="import-export-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-5">
+        <div>
+          <h2 class="font-bold text-xl hero-title">Importar / Exportar</h2>
+          <p class="text-xs text-[#756c7e] mt-1">Gestiona tus catálogos y productos</p>
+        </div>
+        <button id="close-import-export-modal" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button>
+      </div>
+      
+      <!-- SECCIÓN IMPORTAR -->
+      <div class="mb-6">
+        <h3 class="font-bold text-sm text-[#7c43ba] mb-3 flex items-center gap-2">
+          <i data-lucide="upload" class="w-4 h-4"></i> Importar
+        </h3>
+        <label class="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-dashed border-[#d4c5e0] hover:border-[#7c43ba] hover:bg-[#f6f1f8] transition text-left cursor-pointer">
+          <div class="w-10 h-10 rounded-xl bg-[#7c43ba]/10 grid place-items-center">
+            <i data-lucide="file-up" class="w-5 h-5 text-[#7c43ba]"></i>
+          </div>
+          <div class="flex-1">
+            <p class="font-bold text-sm">Cargar archivo</p>
+            <p class="text-xs text-[#756c7e] mt-1">Excel, CSV, JSON o PDF</p>
+          </div>
+          <input id="import-file-main" type="file" accept=".json,.csv,.xlsx,.xls,.pdf" class="hidden">
+        </label>
+        <p class="text-xs text-[#756c7e] mt-2">Los productos se agregarán al catálogo actual</p>
+      </div>
+      
+      <!-- SECCIÓN EXPORTAR -->
+      <div>
+        <h3 class="font-bold text-sm text-[#23805d] mb-3 flex items-center gap-2">
+          <i data-lucide="download" class="w-4 h-4"></i> Exportar
+        </h3>
+        
+        <!-- Info contextual -->
+        <div id="export-context-info" class="mb-3 p-2 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800">
+          <i data-lucide="info" class="w-3 h-3 inline"></i>
+          <span id="export-context-text">Exportando todos los catálogos</span>
+        </div>
+        
+        <div class="space-y-2">
+          <button id="export-xlsx-btn" class="w-full flex items-center gap-3 p-3 rounded-xl border-2 border-[#ede7f0] hover:border-[#23805d] hover:bg-[#f0fdf4] transition text-left">
+            <div class="w-9 h-9 rounded-lg bg-[#23805d]/10 grid place-items-center"><i data-lucide="file-spreadsheet" class="w-4 h-4 text-[#23805d]"></i></div>
+            <div class="flex-1"><p class="font-bold text-sm">Excel (XLSX)</p><p class="text-xs text-[#756c7e]">Cuadro de cálculo</p></div>
+          </button>
+          <button id="export-json-btn" class="w-full flex items-center gap-3 p-3 rounded-xl border-2 border-[#ede7f0] hover:border-[#7c43ba] hover:bg-[#f6f1f8] transition text-left">
+            <div class="w-9 h-9 rounded-lg bg-[#7c43ba]/10 grid place-items-center"><i data-lucide="file-json" class="w-4 h-4 text-[#7c43ba]"></i></div>
+            <div class="flex-1"><p class="font-bold text-sm">JSON</p><p class="text-xs text-[#756c7e]">Respaldo completo con imágenes</p></div>
+          </button>
+          <button id="export-csv-btn" class="w-full flex items-center gap-3 p-3 rounded-xl border-2 border-[#ede7f0] hover:border-[#d97706] hover:bg-[#fffbeb] transition text-left">
+            <div class="w-9 h-9 rounded-lg bg-[#d97706]/10 grid place-items-center"><i data-lucide="file-text" class="w-4 h-4 text-[#d97706]"></i></div>
+            <div class="flex-1"><p class="font-bold text-sm">CSV</p><p class="text-xs text-[#756c7e]">Texto separado por comas</p></div>
+          </button>
+          
+          <!-- Botón para forzar exportar TODO -->
+          <button id="export-all-btn" class="w-full flex items-center gap-3 p-3 rounded-xl border-2 border-purple-200 bg-purple-50 hover:border-purple-400 hover:bg-purple-100 transition text-left mt-3">
+            <div class="w-9 h-9 rounded-lg bg-purple-200 grid place-items-center"><i data-lucide="database" class="w-4 h-4 text-purple-700"></i></div>
+            <div class="flex-1"><p class="font-bold text-sm text-purple-800">Exportar TODO</p><p class="text-xs text-purple-600">Todos los catálogos y productos</p></div>
+          </button>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <!-- FIX: MODAL EXPORTAR - CERRADO CORRECTAMENTE -->
+  <div id="export-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-5">
+        <div>
+          <h2 class="font-bold text-xl hero-title">Exportar datos</h2>
+          <p class="text-xs text-[#756c7e] mt-1">Descarga o comparte tu catálogo</p>
+        </div>
+        <button id="close-export-modal" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button>
+      </div>
+      <div class="space-y-3">
+        <button id="export-xlsx-btn" class="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-[#ede7f0] hover:border-[#23805d] hover:bg-[#f0fdf4] transition text-left shadow-sm">
+          <div class="w-10 h-10 rounded-xl bg-[#23805d]/10 grid place-items-center"><i data-lucide="file-spreadsheet" class="w-5 h-5 text-[#23805d]"></i></div>
+          <div class="flex-1"><p class="font-bold text-sm">Exportar a Excel (XLSX)</p><p class="text-xs text-[#756c7e]">Cuadro de cálculo con celdas</p></div>
+          <i data-lucide="download" class="w-4 h-4 text-[#23805d]"></i>
+        </button>
+        <button id="export-json-btn" class="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-[#ede7f0] hover:border-[#7c43ba] hover:bg-[#f6f1f8] transition text-left shadow-sm">
+          <div class="w-10 h-10 rounded-xl bg-[#7c43ba]/10 grid place-items-center"><i data-lucide="file-json" class="w-5 h-5 text-[#7c43ba]"></i></div>
+          <div class="flex-1"><p class="font-bold text-sm">Exportar a JSON</p><p class="text-xs text-[#756c7e]">Respaldo completo con imágenes</p></div>
+          <i data-lucide="download" class="w-4 h-4 text-[#7c43ba]"></i>
+        </button>
+        <button id="export-csv-btn" class="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-[#ede7f0] hover:border-[#d97706] hover:bg-[#fffbeb] transition text-left shadow-sm">
+          <div class="w-10 h-10 rounded-xl bg-[#d97706]/10 grid place-items-center"><i data-lucide="file-text" class="w-5 h-5 text-[#d97706]"></i></div>
+          <div class="flex-1"><p class="font-bold text-sm">Exportar a CSV</p><p class="text-xs text-[#756c7e]">Separado por comas</p></div>
+          <i data-lucide="download" class="w-4 h-4 text-[#d97706]"></i>
+        </button>
+        <button id="export-share-btn" class="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-[#ede7f0] hover:border-[#25D366] hover:bg-[#f0fdf4] transition text-left shadow-sm">
+          <div class="w-10 h-10 rounded-xl bg-[#25D366]/10 grid place-items-center"><i data-lucide="share-2" class="w-5 h-5 text-[#25D366]"></i></div>
+          <div class="flex-1"><p class="font-bold text-sm">Compartir catálogo</p><p class="text-xs text-[#756c7e]">Enviar por WhatsApp, Telegram, etc.</p></div>
+          <i data-lucide="send" class="w-4 h-4 text-[#25D366]"></i>
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <!-- MODAL: RESPALDO -->
+  <div id="backup-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6">
+      <div class="flex justify-between items-center mb-5"><h2 class="font-bold text-xl hero-title">Respaldo de datos</h2><button id="close-backup-modal" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <div class="p-4 rounded-2xl bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] border border-[#bbf7d0] mb-4"><div class="flex items-start gap-3"><i data-lucide="shield-check" class="w-5 h-5 text-[#166534] flex-shrink-0 mt-0.5"></i><div><p class="font-bold text-sm text-[#166534]">Protege tus datos</p><p class="text-xs text-[#756c7e] mt-1">Crea una copia de seguridad de todos tus productos, ventas y catálogos.</p></div></div></div>
+      <div class="space-y-3">
+        <button id="create-backup" class="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-[#ede7f0] hover:border-[#7c43ba] hover:bg-[#f6f1f8] transition text-left"><div class="w-10 h-10 rounded-xl bg-[#7c43ba]/10 grid place-items-center"><i data-lucide="download" class="w-5 h-5 text-[#7c43ba]"></i></div><div class="flex-1"><p class="font-bold text-sm">Crear respaldo</p><p class="text-xs text-[#756c7e]">Descarga todos tus datos</p></div></button>
+        <label class="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-dashed border-[#d4c5e0] hover:border-[#7c43ba] hover:bg-[#f6f1f8] transition text-left cursor-pointer"><div class="w-10 h-10 rounded-xl bg-[#23805d]/10 grid place-items-center"><i data-lucide="upload" class="w-5 h-5 text-[#23805d]"></i></div><div class="flex-1"><p class="font-bold text-sm">Restaurar respaldo</p><p class="text-xs text-[#756c7e]">Recupera datos de un archivo</p></div><input id="restore-backup-file" type="file" accept=".json" class="hidden"></label>
+      </div>
+      <div class="mt-4 p-3 rounded-xl bg-[#fffbeb] border border-[#fde68a]"><p class="text-xs text-[#92400e]"><i data-lucide="alert-circle" class="w-3 h-3 inline"></i><b>Importante:</b> Al restaurar, se reemplazarán tus datos actuales. Crea un respaldo antes de restaurar.</p></div>
+    </article>
+  </div>
+
+  <!-- MODAL: CÓDIGOS QR -->
+  <div id="qr-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-5">
+        <div><h2 class="font-bold text-xl hero-title">Códigos QR</h2><p class="text-xs text-[#756c7e] mt-1">Gestiona tus códigos de cobro</p></div>
+        <button id="close-qr-modal" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button>
+      </div>
+      <div id="qr-list-container" class="space-y-6"></div>
+      <div id="qr-empty-state" class="text-center py-8">
+        <div class="w-24 h-24 mx-auto rounded-2xl bg-[#f6f1f8] border-2 border-dashed border-[#d4c5e0] flex items-center justify-center mb-3"><i data-lucide="qr-code" class="w-10 h-10 text-[#d4c5e0]"></i></div>
+        <p class="font-bold text-sm">Sin códigos QR aún</p><p class="text-xs text-[#756c7e] mt-1">Agrega tu primer código QR</p>
+      </div>
+      <button id="add-new-qr-btn" class="w-full mt-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 border-2 border-dashed border-[#7c43ba] text-[#7c43ba] hover:bg-[#f6f1f8]"><i data-lucide="plus-circle" class="w-5 h-5"></i> Agregar nuevo QR</button>
+      <div class="mt-4 p-3 rounded-xl bg-[#f6f1f8]"><p class="text-xs text-[#756c7e]"><i data-lucide="info" class="w-3 h-3 inline"></i> <b>Dueño:</b> El QR principal es visible para todos los vendedores. Puedes tener varios QRs (bancos, wallets, etc).</p></div>
+    </article>
+  </div>
+
+  <!-- MODAL: VISOR QR -->
+  <div id="qr-lightbox" class="fixed inset-0 z-[10000] bg-black/95 hidden flex-col items-center justify-center p-4" onclick="this.classList.add('hidden')">
+    <button class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 text-white grid place-items-center hover:bg-white/30 transition"><i data-lucide="x" class="w-6 h-6"></i></button>
+    <img id="qr-lightbox-img" src="" class="max-w-[95%] max-h-[75vh] object-contain rounded-xl bg-white p-4 shadow-2xl">
+    <p id="qr-lightbox-label" class="text-white mt-4 text-lg font-bold text-center max-w-[90%]"></p>
+  </div>
+
+  <!-- MODAL: MENÚ QR -->
+  <div id="qr-item-menu-modal" class="modal fixed inset-0 z-[60] bg-[#1e1427]/70 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-sm bg-white rounded-3xl p-5">
+      <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">Opciones del QR</h3><button id="close-qr-item-menu" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <div id="qr-item-menu-preview" class="mb-4 text-center"></div>
+      <div class="space-y-2">
+        <button id="qr-menu-set-primary" class="w-full py-2.5 rounded-xl btn-ghost font-bold text-sm flex items-center gap-2 justify-center"><i data-lucide="star" class="w-4 h-4"></i> Establecer como principal</button>
+        <button id="qr-menu-change" class="w-full py-2.5 rounded-xl btn-ghost font-bold text-sm flex items-center gap-2 justify-center"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Cambiar imagen</button>
+        <button id="qr-menu-rename" class="w-full py-2.5 rounded-xl btn-ghost font-bold text-sm flex items-center gap-2 justify-center"><i data-lucide="pencil" class="w-4 h-4"></i> Cambiar nombre</button>
+        <button id="qr-menu-share" class="w-full py-2.5 rounded-xl btn-whatsapp font-bold text-sm flex items-center gap-2 justify-center"><i data-lucide="message-circle" class="w-4 h-4"></i> Compartir por WhatsApp</button>
+        <button id="qr-menu-download" class="w-full py-2.5 rounded-xl btn-ghost font-bold text-sm flex items-center gap-2 justify-center"><i data-lucide="download" class="w-4 h-4"></i> Descargar imagen</button>
+        <button id="qr-menu-delete" class="w-full py-2.5 rounded-xl font-bold text-sm text-[#a43658] hover:bg-[#fff0f3] flex items-center gap-2 justify-center"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar QR</button>
+      </div>
+    </article>
+  </div>
+
+  <!-- MODAL: BÚSQUEDA POR IMAGEN -->
+  <div id="image-search-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center"><h2 class="font-bold text-xl hero-title">Buscar por imagen</h2><button id="close-image-search" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <p class="text-sm text-[#756c7e] mt-2">Sube una foto o toma una con la cámara.</p>
+      <div class="mt-5 grid grid-cols-2 gap-3">
+        <label class="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-[#d4c5e0] hover:border-[#7c43ba] hover:bg-[#f6f1f8] transition cursor-pointer"><i data-lucide="camera" class="w-8 h-8 text-[#7c43ba] mb-2"></i><p class="font-bold text-sm text-center">Tomar foto</p><p class="text-xs text-[#756c7e] mt-1 text-center">Abrir cámara</p><input id="image-search-camera" type="file" accept="image/*" capture="environment" class="hidden"></label>
+        <label class="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-[#d4c5e0] hover:border-[#7c43ba] hover:bg-[#f6f1f8] transition cursor-pointer"><i data-lucide="image" class="w-8 h-8 text-[#7c43ba] mb-2"></i><p class="font-bold text-sm text-center">Subir archivo</p><p class="text-xs text-[#756c7e] mt-1 text-center">Desde galería</p><input id="image-search-file" type="file" accept="image/*" class="hidden"></label>
+      </div>
+      <img id="image-search-preview" class="mt-4 hidden w-full h-48 object-cover rounded-2xl" alt="">
+      <div id="image-search-results" class="hidden mt-5"><p class="text-xs uppercase tracking-[.15em] font-bold text-[#756c7e] mb-2">Productos similares:</p><div id="similar-products-list" class="space-y-2"></div></div>
+    </article>
+  </div>
+
+  <!-- MODAL: ESCÁNER -->
+  <div id="barcode-scanner-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/90 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6">
+      <div class="flex justify-between items-center mb-4"><h2 class="font-bold text-xl hero-title">Escanear código</h2><button id="close-barcode-scanner" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <div id="barcode-reader" class="rounded-xl overflow-hidden bg-black"></div>
+      <p class="text-xs text-[#756c7e] mt-3 text-center">Apunta la cámara al código de barras del producto</p>
+      <button id="stop-scanner" type="button" class="w-full mt-4 py-3 rounded-xl btn-ghost font-bold">Detener escáner</button>
+    </article>
+  </div>
+
+  <!-- MODAL: IMPRIMIR CÓDIGO -->
+  <div id="barcode-print-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6">
+      <div class="flex justify-between items-center mb-4"><h2 class="font-bold text-xl hero-title">Imprimir código</h2><button id="close-barcode-print" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <div class="p-4 rounded-xl bg-[#f6f1f8] mb-4 text-center"><p class="text-xs text-[#756c7e] uppercase tracking-wide">Producto</p><p id="barcode-product-name" class="font-bold text-lg mt-1 break-words"></p></div>
+      <div class="bg-white p-4 rounded-xl border border-[#ede7f0] text-center mb-4"><svg id="barcode-svg"></svg></div>
+      <div class="flex gap-2">
+        <button id="print-barcode-btn" type="button" class="flex-1 py-3 rounded-xl btn-primary font-bold flex items-center justify-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir</button>
+        <button id="download-barcode-btn" type="button" class="flex-1 py-3 rounded-xl btn-ghost font-bold flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Descargar</button>
+      </div>
+    </article>
+  </div>
+
+  <!-- MODAL: COMPARTIR -->
+  <div id="share-catalog-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6">
+      <div class="flex justify-between items-center mb-4"><h2 class="font-bold text-xl hero-title">Compartir catálogo</h2><button id="close-share-catalog" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <p class="text-sm text-[#756c7e] mb-4">Comparte este catálogo con tus clientes.</p>
+      <div class="p-3 rounded-xl bg-[#f6f1f8] mb-4">
+        <p class="text-xs text-[#756c7e] uppercase tracking-wide mb-1">Texto para compartir</p>
+        <div class="flex gap-2"><input id="share-catalog-link" type="text" readonly class="flex-1 input-field rounded-lg p-2 text-sm"><button id="copy-share-link" type="button" class="btn-primary rounded-lg px-3"><i data-lucide="copy" class="w-4 h-4"></i></button></div>
+      </div>
+      <div class="flex gap-2">
+        <button id="share-whatsapp-catalog" type="button" class="flex-1 py-3 rounded-xl btn-whatsapp font-bold flex items-center justify-center gap-2"><i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp</button>
+        <button id="share-email-catalog" type="button" class="flex-1 py-3 rounded-xl btn-ghost font-bold flex items-center justify-center gap-2"><i data-lucide="mail" class="w-4 h-4"></i> Email</button>
+      </div>
+    </article>
+  </div>
+
+  <!-- MODAL: EQUIPO -->
+  <div id="team-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-2xl bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-5">
+        <div>
+          <h2 class="font-bold text-xl hero-title">Equipo</h2>
+          <p class="text-xs text-[#756c7e] mt-1">Gestiona los usuarios de tu aplicación</p>
+          <button id="open-create-user-btn" class="mt-3 w-full py-2.5 rounded-xl bg-[#23805d] text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#1a634a] transition"><i data-lucide="user-plus" class="w-4 h-4"></i> Agregar nuevo usuario</button>
+        </div>
+        <button id="close-team-modal" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button>
+      </div>
+      <div class="flex gap-2 mb-4">
+        <button id="team-filter-today" class="px-4 py-2 rounded-xl bg-[#7c43ba] text-white text-sm font-bold">Hoy</button>
+        <button id="team-filter-all" class="px-4 py-2 rounded-xl bg-[#f1ecf4] text-[#7c43ba] text-sm font-bold">Todos</button>
+      </div>
+      <div id="team-list" class="space-y-2"></div>
+      <div id="team-empty" class="hidden text-center py-8"><i data-lucide="users" class="w-12 h-12 mx-auto text-[#d4c5e0] mb-3"></i><p class="font-bold text-sm">Sin usuarios</p><p class="text-xs text-[#756c7e] mt-1">No hay usuarios que coincidan con el filtro</p></div>
+    </article>
+  </div>
+
+  <!-- MODAL: CREAR USUARIO -->
+  <div id="create-user-modal" class="modal fixed inset-0 z-[60] bg-[#1e1427]/70 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-5">
+        <div><h2 class="font-bold text-xl hero-title">Nuevo Usuario</h2><p class="text-xs text-[#756c7e] mt-1">Crea una cuenta para tu equipo</p></div>
+        <button id="close-create-user" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button>
+      </div>
+      <form id="create-user-form" class="space-y-4">
+        <div><label class="block font-bold text-sm mb-1.5">Nombre completo *</label><input id="new-user-name" type="text" required class="w-full input-field rounded-xl p-3" placeholder="Ej: Juan Pérez"></div>
+        <div><label class="block font-bold text-sm mb-1.5">Nombre de usuario (ID) *</label><input id="new-user-username" type="text" required class="w-full input-field rounded-xl p-3" placeholder="Ej: juan1"><p class="text-[10px] text-[#756c7e] mt-1">Este será su ID para iniciar sesión</p></div>
+        <div><label class="block font-bold text-sm mb-1.5">Correo electrónico</label><input id="new-user-email" type="email" class="w-full input-field rounded-xl p-3" placeholder="juan@tutienda.com"></div>
+        <div><label class="block font-bold text-sm mb-1.5">Teléfono</label><input id="new-user-phone" type="tel" class="w-full input-field rounded-xl p-3" placeholder="+591 70000000"></div>
+        <div><label class="block font-bold text-sm mb-1.5">Contraseña temporal *</label><input id="new-user-password" type="text" required class="w-full input-field rounded-xl p-3" placeholder="Mínimo 6 caracteres"></div>
+        <div><label class="block font-bold text-sm mb-1.5">Rol *</label><select id="new-user-role" class="w-full input-field rounded-xl p-3"><option value="vendedor">👤 Vendedor</option><option value="supervisor">📊 Supervisor</option><option value="coadmin">⭐ Co-Administrador</option><option value="admin">👑 Administrador</option></select></div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" id="cancel-create-user" class="flex-1 py-3 rounded-xl btn-ghost font-bold text-sm">Cancelar</button>
+          <button type="submit" id="submit-create-user" class="flex-1 py-3 rounded-xl btn-primary font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> Crear usuario</button>
+        </div>
+      </form>
+    </article>
+  </div>
+
+  <!-- MODAL: MENÚ USUARIO EQUIPO -->
+  <div id="team-user-menu-modal" class="modal fixed inset-0 z-[60] bg-[#1e1427]/70 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-sm bg-white rounded-3xl p-5">
+      <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">Opciones de usuario</h3><button id="close-team-user-menu" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <div id="team-user-preview" class="mb-4 p-3 rounded-xl bg-[#f6f1f8]"></div>
+      <div class="space-y-2">
+        <button id="team-user-toggle-status" class="w-full py-2.5 rounded-xl btn-ghost font-bold text-sm flex items-center gap-2 justify-center"><i data-lucide="shield" class="w-4 h-4"></i> <span id="toggle-status-text">Bloquear usuario</span></button>
+        <button id="team-user-change-role" class="w-full py-2.5 rounded-xl btn-ghost font-bold text-sm flex items-center gap-2 justify-center"><i data-lucide="pencil" class="w-4 h-4"></i> Cambiar rol</button>
+        <button id="team-user-reset-password" class="w-full py-2.5 rounded-xl btn-ghost font-bold text-sm flex items-center gap-2 justify-center"><i data-lucide="key" class="w-4 h-4"></i> Restablecer contraseña</button>
+        <button id="team-user-delete" class="w-full py-2.5 rounded-xl font-bold text-sm text-[#a43658] hover:bg-[#fff0f3] flex items-center gap-2 justify-center"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar usuario</button>
+      </div>
+    </article>
+  </div>
+
+  <!-- MODAL: CAMBIAR ROL -->
+  <div id="team-change-role-modal" class="modal fixed inset-0 z-[70] bg-[#1e1427]/70 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-sm bg-white rounded-3xl p-5">
+      <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg">Cambiar rol</h3><button id="close-team-change-role" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <div id="team-change-role-preview" class="mb-4 p-3 rounded-xl bg-[#f6f1f8]"></div>
+      <label class="block text-sm font-bold mb-2">Selecciona el nuevo rol:</label>
+      <select id="team-role-select" class="w-full input-field rounded-xl p-3 mb-4">
+        <option value="admin">👑 Administrador</option>
+        <option value="coadmin">⭐ Co-Administrador</option>
+        <option value="supervisor">📊 Supervisor</option>
+        <option value="vendedor">👤 Vendedor</option>
+      </select>
+      <div class="flex gap-2">
+        <button id="cancel-team-change-role" class="flex-1 py-2.5 rounded-xl btn-ghost font-bold text-sm">Cancelar</button>
+        <button id="confirm-team-change-role" class="flex-1 py-2.5 rounded-xl btn-primary font-bold text-sm">Confirmar</button>
+      </div>
+    </article>
+  </div>
+
+  <!-- MODAL: CAMBIAR CONTRASEÑA -->
+  <div id="change-password-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-5"><h2 class="font-bold text-xl hero-title">Cambiar contraseña</h2><button id="close-change-password" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <form id="change-password-form" class="space-y-4">
+        <div><label class="block font-bold text-sm mb-1.5">Contraseña actual *</label><input id="current-password" type="password" required class="w-full input-field rounded-xl p-3"></div>
+        <div><label class="block font-bold text-sm mb-1.5">Nueva contraseña *</label><input id="new-password" type="password" required class="w-full input-field rounded-xl p-3" placeholder="Mínimo 6 caracteres"></div>
+        <div><label class="block font-bold text-sm mb-1.5">Confirmar nueva contraseña *</label><input id="confirm-new-password" type="password" required class="w-full input-field rounded-xl p-3"></div>
+        <div class="flex gap-2">
+          <button type="button" id="cancel-change-password" class="flex-1 py-3 rounded-xl btn-ghost font-bold text-sm">Cancelar</button>
+          <button type="submit" class="flex-1 py-3 rounded-xl btn-primary font-bold text-sm">Cambiar</button>
+        </div>
+      </form>
+    </article>
+  </div>
+
+  <!-- MODAL: PERFIL DE USUARIO -->
+  <div id="user-profile-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-5"><h2 class="font-bold text-xl hero-title">Mi perfil</h2><button id="close-user-profile" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <div id="user-profile-content" class="space-y-4">
+        <div><label class="block font-bold text-sm mb-1.5">Nombre</label><input id="profile-name" type="text" class="w-full input-field rounded-xl p-3"></div>
+        <div><label class="block font-bold text-sm mb-1.5">Correo electrónico</label><input id="profile-email" type="email" class="w-full input-field rounded-xl p-3"></div>
+        <div><label class="block font-bold text-sm mb-1.5">Teléfono</label><input id="profile-phone" type="tel" class="w-full input-field rounded-xl p-3"></div>
+        <div><label class="block font-bold text-sm mb-1.5">Nombre de usuario</label><input id="profile-username" type="text" class="w-full input-field rounded-xl p-3 bg-[#f6f1f8]" readonly></div>
+        <div><label class="block font-bold text-sm mb-1.5">Rol</label><input id="profile-role" type="text" class="w-full input-field rounded-xl p-3 bg-[#f6f1f8]" readonly></div>
+        <button id="save-profile" type="button" class="w-full py-3 rounded-xl btn-primary font-bold">Guardar cambios</button>
+      </div>
+      <div id="user-profile-vendor-message" class="hidden text-center py-8">
+        <i data-lucide="info" class="w-12 h-12 mx-auto text-[#7c43ba] mb-3"></i>
+        <p class="font-bold text-sm">Si necesitas actualizar tus datos</p>
+        <p class="text-xs text-[#756c7e] mt-2">Contacta al administrador para solicitar cambios en tu perfil.</p>
+        <!-- FIX: Botón añadido para solicitar cambio -->
+        <button id="btn-request-change" type="button" class="mt-4 px-6 py-2.5 rounded-xl btn-whatsapp font-bold text-sm inline-flex items-center gap-2"><i data-lucide="message-circle" class="w-4 h-4"></i> Solicitar cambio por WhatsApp</button>
+      </div>
+    </article>
+  </div>
+
+  <!-- MODAL: AYUDA -->
+  <div id="help-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-lg bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4"><h2 class="font-bold text-xl hero-title">Cómo usar la app</h2><button id="close-help" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <div class="space-y-3">
+        <div class="help-item"><i data-lucide="shield-check" class="w-5 h-5"></i><div><p class="font-bold text-sm">Respaldo de datos</p><p class="text-xs text-[#756c7e] mt-1">Crea copias de seguridad de todos tus datos y restáuralas cuando necesites.</p></div></div>
+        <div class="help-item"><i data-lucide="qr-code" class="w-5 h-5"></i><div><p class="font-bold text-sm">Código QR</p><p class="text-xs text-[#756c7e] mt-1">Sube tu imagen QR personal para compartirla por WhatsApp.</p></div></div>
+        <div class="help-item"><i data-lucide="eye-off" class="w-5 h-5"></i><div><p class="font-bold text-sm">Modo Cliente</p><p class="text-xs text-[#756c7e] mt-1">Oculta costos, ganancias y ventas al mostrar el catálogo a un comprador.</p></div></div>
+        <div class="help-item"><i data-lucide="file-up" class="w-5 h-5"></i><div><p class="font-bold text-sm">Importar / Exportar</p><p class="text-xs text-[#756c7e] mt-1">Exporta a Excel, JSON o CSV. Importa desde Excel, CSV, JSON o PDF.</p></div></div>
+        <div class="help-item"><i data-lucide="scan-line" class="w-5 h-5"></i><div><p class="font-bold text-sm">Escanear códigos</p><p class="text-xs text-[#756c7e] mt-1">Usa la cámara para escanear códigos de barras de tus productos.</p></div></div>
+        <div class="help-item"><i data-lucide="alert-circle" class="w-5 h-5"></i><div><p class="font-bold text-sm">Stock bajo</p><p class="text-xs text-[#756c7e] mt-1">Recibe alertas cuando tus productos tengan 3 unidades o menos.</p></div></div>
+      </div>
+    </article>
+  </div>
+
+  <!-- MODAL: CONTACTOS -->
+  <div id="contacts-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6">
+      <div class="flex justify-between items-center mb-4"><h2 class="font-bold text-xl hero-title">Mis datos de contacto</h2><button id="close-contacts" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button></div>
+      <form id="contacts-form" class="space-y-4">
+        <div><label class="block font-bold text-sm mb-1.5">Nombre completo</label><input id="contact-name" type="text" class="w-full input-field rounded-xl p-3" placeholder="Ej: María García"></div>
+        <div><label class="block font-bold text-sm mb-1.5">WhatsApp</label><input id="contact-whatsapp" type="tel" class="w-full input-field rounded-xl p-3" placeholder="Ej: +591 70000000"></div>
+        <div><label class="block font-bold text-sm mb-1.5">Correo electrónico</label><input id="contact-email" type="email" class="w-full input-field rounded-xl p-3" placeholder="Ej: maria@email.com"></div>
+        <div><label class="block font-bold text-sm mb-1.5">Negocio / Empresa</label><input id="contact-business" type="text" class="w-full input-field rounded-xl p-3" placeholder="Ej: Tienda María"></div>
+        <button type="submit" class="w-full py-3 rounded-xl btn-primary font-bold">Guardar datos</button>
+      </form>
+    </article>
+  </div>
+
+  <div id="toast" class="toast fixed left-1/2 bottom-24 lg:bottom-7 z-[10001] text-white px-5 py-3 rounded-full text-sm font-medium max-w-[90vw] text-center" role="status"></div>
+  
+  <!-- MODAL: QR DEL PRODUCTO -->
+  <div id="product-qr-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-bold text-xl hero-title">Código QR del Producto</h2>
+        <button id="close-product-qr" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button>
+      </div>
+      <div class="text-center">
+        <img id="product-qr-image" src="" alt="QR Code" class="mx-auto mb-4 border-4 border-white shadow-lg rounded-lg">
+        <h3 id="product-qr-name" class="font-bold text-lg mb-1"></h3>
+        <p id="product-qr-price" class="text-[#7c43ba] font-bold text-xl mb-4"></p>
+        <div class="p-3 rounded-xl bg-[#f6f1f8] mb-4">
+          <p class="text-xs text-[#756c7e]"><i data-lucide="info" class="w-3 h-3 inline"></i> Este QR contiene información del producto. Los compradores verán solo información pública, los vendedores verán todos los detalles.</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="download-product-qr" type="button" class="flex-1 py-3 rounded-xl btn-primary font-bold flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> Descargar</button>
+          <button id="print-product-qr" type="button" class="flex-1 py-3 rounded-xl btn-ghost font-bold flex items-center justify-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir</button>
+        </div>
+      </div>
+    </article>
+  </div>
+  
+  <!-- MODAL: LISTA DE VENTAS -->
+  <div id="quick-scan-modal" class="modal fixed inset-0 z-50 bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-2xl bg-white rounded-3xl max-h-[95vh] flex flex-col">
+      <!-- Header -->
+      <div class="flex justify-between items-center p-4 border-b border-gray-200 flex-shrink-0">
+        <div>
+          <h2 class="font-bold text-xl hero-title text-[#7c43ba]">Lista de Ventas</h2>
+          <p id="quick-scan-items-count" class="text-xs text-[#756c7e]">0 productos</p>
+        </div>
+        <button id="close-quick-scan" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button>
+      </div>
+      
+      <!-- Contenido SCROLLABLE -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-3">
+        
+        <!-- Botones de acción -->
+        <div class="grid grid-cols-2 gap-2">
+          <button id="quick-scan-camera-btn" type="button" class="py-3 rounded-xl btn-primary font-bold flex items-center justify-center gap-2">
+            <i data-lucide="scan-line" class="w-5 h-5"></i> Escanear
+          </button>
+          <button id="quick-scan-manual-btn" type="button" class="py-3 rounded-xl btn-ghost font-bold flex items-center justify-center gap-2">
+            <i data-lucide="plus" class="w-5 h-5"></i> Agregar
+          </button>
+        </div>
+        
+        <!-- Mensaje cuando está vacío -->
+        <div id="quick-scan-empty" class="text-center py-8">
+          <div class="text-6xl mb-3">🛒</div>
+          <p class="font-bold text-gray-700">Tu lista está vacía</p>
+          <p class="text-sm text-gray-500 mt-1">Escanea productos o agrégalos manualmente</p>
+        </div>
+        
+        <!-- Lista de productos -->
+        <div id="quick-scan-list" class="space-y-2">
+          <!-- Productos aparecerán aquí -->
+        </div>
+        
+        <!-- Descuento -->
+        <div class="border-t border-gray-200 pt-3">
+          <label class="block text-xs font-bold mb-2">Descuento</label>
+          <div class="flex gap-2">
+            <input id="quick-scan-discount-input" type="number" min="0" step="0.01" class="flex-1 input-field rounded-lg p-2 text-sm" placeholder="0.00">
+            <select id="quick-scan-discount-type" class="input-field rounded-lg p-2 text-sm">
+              <option value="fixed">$ Fijo</option>
+              <option value="percent">% Porcentaje</option>
+            </select>
+            <button id="apply-quick-scan-discount" type="button" class="btn-ghost rounded-lg px-3 py-2 text-xs font-bold">Aplicar</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer FIJO con totales y botones -->
+      <div class="border-t-2 border-gray-200 bg-gray-50 p-4 flex-shrink-0">
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-[#756c7e]">Descuento:</span>
+          <span id="quick-scan-discount" class="font-bold text-[#d97706]">Sin descuento</span>
+        </div>
+        <div class="flex justify-between text-2xl mb-3">
+          <span class="font-bold">TOTAL:</span>
+          <span id="quick-scan-total" class="font-bold text-[#7c43ba] hero-title">$0.00</span>
+        </div>
+        <div class="flex gap-2" style="position: relative; z-index: 100;">
+          <button id="cancel-quick-scan" type="button" class="flex-1 py-3 rounded-xl btn-ghost font-bold" style="cursor: pointer; position: relative; z-index: 101;">Cancelar</button>
+          <button id="finalize-quick-scan" type="button" class="flex-1 py-3 rounded-xl btn-success font-bold flex items-center justify-center gap-2" style="cursor: pointer; position: relative; z-index: 101; pointer-events: auto;"><i data-lucide="check-circle" class="w-5 h-5"></i> Finalizar</button>
+        </div>
+      </div>
+    </article>
+  </div>
+  
+  <!-- MODAL: AGREGAR PRODUCTO MANUALMENTE AL ESCANEO -->
+  <div id="quick-scan-manual-modal" class="modal fixed inset-0 z-[60] bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-bold text-xl hero-title">Agregar Producto</h2>
+        <button id="close-manual-add" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button>
+      </div>
+      <div>
+        <label class="block text-sm font-bold mb-2">Buscar producto</label>
+        <input id="manual-product-search" type="text" class="w-full input-field rounded-xl p-3 mb-3" placeholder="Escribe el nombre del producto...">
+        <div id="manual-product-results" class="space-y-2 max-h-[50vh] overflow-y-auto">
+          <!-- Resultados de búsqueda aparecerán aquí -->
+        </div>
+      </div>
+    </article>
+  </div>
+  
+  <!-- MODAL: VISTA PREVIA DE IMAGEN -->
+  <div id="image-preview-modal" class="modal fixed inset-0 z-[80] bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article class="modal-card w-full max-w-md bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-bold text-xl hero-title">Vista Previa</h2>
+        <button id="close-image-preview" class="w-9 h-9 rounded-full bg-[#f1ecf4] grid place-items-center hover:bg-[#e8dfec]"><i data-lucide="x"></i></button>
+      </div>
+      <div id="image-preview-container" class="border-2 border-gray-200 rounded-xl overflow-hidden mb-4">
+        <img id="image-preview-img" src="" alt="Vista previa" class="w-full h-auto">
+      </div>
+      <div class="flex gap-2">
+        <button id="save-image-btn" type="button" class="flex-1 py-3 rounded-xl btn-primary font-bold flex items-center justify-center gap-2">
+          <i data-lucide="download" class="w-4 h-4"></i> Guardar
+        </button>
+        <button id="share-image-btn" type="button" class="flex-1 py-3 rounded-xl btn-success font-bold flex items-center justify-center gap-2">
+          <i data-lucide="share-2" class="w-4 h-4"></i> Enviar
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <!-- MODAL: RECIBO DE VENTA EXITOSO -->
+  <div id="sale-receipt-modal" class="modal fixed inset-0 z-[70] bg-[#1e1427]/60 p-4 grid place-items-center backdrop-blur-sm">
+    <article id="receipt-content" class="modal-card w-full max-w-md bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="text-center mb-4">
+        <div class="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-3">
+          <i data-lucide="check-circle" class="w-12 h-12 text-green-600"></i>
+        </div>
+        <h2 class="font-bold text-2xl hero-title text-green-700">¡Venta Exitosa!</h2>
+        <p class="text-sm text-gray-600 mt-1">La venta ha sido registrada correctamente</p>
+      </div>
+      
+      <!-- Información de la venta -->
+      <div class="bg-gray-50 rounded-xl p-4 mb-4">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-gray-600">Fecha:</span>
+          <span id="receipt-date" class="text-sm font-bold"></span>
+        </div>
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm text-gray-600">Vendedor:</span>
+          <span id="receipt-seller" class="text-sm font-bold"></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600">Método de pago:</span>
+          <span id="receipt-payment" class="text-sm font-bold"></span>
+        </div>
+      </div>
+      
+      <!-- Lista de productos vendidos -->
+      <div class="mb-4">
+        <h3 class="font-bold text-sm mb-2">Productos vendidos:</h3>
+        <div id="receipt-items" class="space-y-2 max-h-[30vh] overflow-y-auto">
+          <!-- Items aparecerán aquí -->
+        </div>
+      </div>
+      
+      <!-- Totales -->
+      <div class="border-t-2 border-gray-200 pt-3 mb-4">
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-gray-600">Subtotal:</span>
+          <span id="receipt-subtotal" class="font-bold"></span>
+        </div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-gray-600">Descuento:</span>
+          <span id="receipt-discount" class="font-bold text-orange-600"></span>
+        </div>
+        <div class="flex justify-between text-xl mt-2 pt-2 border-t border-gray-200">
+          <span class="font-bold">TOTAL:</span>
+          <span id="receipt-total" class="font-bold text-green-700"></span>
+        </div>
+      </div>
+      
+      <!-- Botones de acción -->
+      <div class="grid grid-cols-2 gap-2 mt-4">
+        <button id="save-receipt-btn" type="button" class="py-3 rounded-xl btn-primary font-bold flex items-center justify-center gap-2">
+          <i data-lucide="download" class="w-4 h-4"></i> Guardar
+        </button>
+        <button id="share-receipt-btn" type="button" class="py-3 rounded-xl btn-success font-bold flex items-center justify-center gap-2">
+          <i data-lucide="share-2" class="w-4 h-4"></i> Enviar
+        </button>
+      </div>
+      <button id="close-receipt-btn" type="button" class="w-full mt-2 py-3 rounded-xl btn-ghost font-bold">
+        Cerrar
+      </button>
+    </article>
+  </div>
+  
+  <template id="product-template">
+    <article class="product-card">
+      <img class="product-image" alt="" onerror="this.src='https://images.pexels.com/photos/15097440/pexels-photo-15097440.jpeg?auto=compress&cs=tinysrgb&w=800'">
+      <div class="p-4">
+        <div class="flex justify-between gap-2">
+          <p class="card-brand text-[10px] uppercase tracking-[.12em] font-bold text-[#7b43a8]"></p>
+          <span class="card-stock text-[10px] bg-[#f0e7f6] rounded-full px-2 py-1 font-bold"></span>
+        </div>
+        <h3 class="card-name font-bold leading-snug mt-1 line-clamp-2 min-h-[42px]"></h3>
+        <p class="card-category text-xs text-[#756c7e] mt-1"></p>
+        <div class="card-offer hidden mt-2 px-2 py-1 rounded-full bg-[#fef3c7] text-[#92400e] text-xs font-bold"></div>
+        <div class="flex justify-between items-end mt-4">
+          <div><p class="text-[10px] text-[#756c7e]">Precio venta</p><p class="card-price text-lg font-bold text-[#6d389f] hero-title"></p></div>
+          <button type="button" class="quick-cart w-9 h-9 rounded-xl bg-[#f0e7f6] text-[#70409c] grid place-items-center hover:bg-[#e0d4f0]" aria-label="Añadir al pedido"><i data-lucide="plus" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js" defer></script>
+  
+  <!-- Registro del Service Worker para modo offline -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => {
+            console.log('✅ Service Worker registrado:', reg.scope);
+          })
+          .catch(err => {
+            console.log('❌ Error registrando Service Worker:', err);
+          });
+      });
+    }
+  </script>
+</body>
+</html>
