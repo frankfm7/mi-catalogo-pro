@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo Pro v1.0 - Código Completo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #7c43ba;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .file-section {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .file-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e8dfec;
+    }
+    .file-name {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #7c43ba;
+    }
+    .copy-btn {
+      background: #7c43ba;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .copy-btn:hover {
+      background: #5f3291;
+    }
+    .code-block {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .instructions {
+      background: #f0fdf4;
+      border-left: 4px solid #10b981;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+    .instructions h2 {
+      color: #059669;
+      margin-bottom: 15px;
+    }
+    .instructions ol {
+      margin-left: 20px;
+    }
+    .instructions li {
+      margin: 10px 0;
+      color: #065f46;
+    }
+    .warning {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+    .warning h3 {
+      color: #d97706;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📦 Catálogo Pro v1.0 - Código Completo</h1>
+
+  <div class="warning">
+    <h3>⚠️ Instrucciones Importantes</h3>
+    <p>Copia cada archivo usando el botón "Copiar" y guárdalo en tu computadora con el nombre exacto que se muestra. Luego sube los 5 archivos a GitHub y despliega en Vercel.</p>
+  </div>
+
+  <div class="instructions">
+    <h2>📋 Pasos para desplegar:</h2>
+    <ol>
+      <li>Copia cada archivo usando el botón "Copiar"</li>
+      <li>Crea una carpeta llamada "mi-catalogo-pro" en tu computadora</li>
+      <li>Crea 5 archivos con los nombres exactos y pega el contenido</li>
+      <li>Sube los 5 archivos a un repositorio de GitHub</li>
+      <li>Importa el repositorio en Vercel y haz clic en "Deploy"</li>
+    </ol>
+  </div>
+
+  <div class="file-section">
+    <div class="file-header">
+      <span class="file-name">📄 index.html</span>
+      <button class="copy-btn" onclick="copyCode('index-html')">📋 Copiar</button>
+    </div>
+    <pre class="code-block" id="index-html"><!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo Pro v1.0</title>
+  <meta http-equiv="refresh" content="0; url=app.html">
+</head>
+<body>
+  <p style="text-align: center; padding: 50px;">Redirigiendo...</p>
+  <script>window.location.href = "app.html";</script>
+</body>
+</html></pre>
+  </div>
+
+  <div class="file-section">
+    <div class="file-header">
+      <span class="file-name">📄 manifest.json</span>
+      <button class="copy-btn" onclick="copyCode('manifest-json')">📋 Copiar</button>
+    </div>
+    <pre class="code-block" id="manifest-json">{
+  "name": "Catálogo Pro",
+  "short_name": "CatálogoPro",
+  "description": "Sistema de gestión de catálogos y ventas",
+  "start_url": "/app.html",
+  "display": "standalone",
+  "background_color": "#f7f5f8",
+  "theme_color": "#7c43ba",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%237c43ba'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='white'%3E🛍️%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}</pre>
+  </div>
+
+  <div class="file-section">
+    <div class="file-header">
+      <span class="file-name">📄 sw.js</span>
+      <button class="copy-btn" onclick="copyCode('sw-js')">📋 Copiar</button>
+    </div>
+    <pre class="code-block" id="sw-js">const CACHE_NAME = 'catalogo-pro-v1.0';
+const urlsToCache = [
+  '/',
+  '/app.html',
+  '/app.js',
+  '/styles.css',
+  '/index.html'
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(urlsToCache))
+  );
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => response || fetch(event.request))
+  );
+});</pre>
+  </div>
+
+  <div class="file-section">
+    <div class="file-header">
+      <span class="file-name">🎨 styles.css</span>
+      <button class="copy-btn" onclick="copyCode('styles-css')">📋 Copiar</button>
+    </div>
+    <pre class="code-block" id="styles-css">* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #7c43ba;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --bg: #f7f5f8;
+  --text: #201728;
+  --text-light: #756c7e;
+  --border: #e8dfec;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.welcome-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.welcome-content {
+  text-align: center;
+  color: white;
+}
+
+.welcome-title {
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.enter-btn {
+  background: white;
+  color: var(--primary);
+  border: none;
+  padding: 15px 50px;
+  font-size: 1.2rem;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.login-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-container {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(124, 67, 186, 0.1);
+  width: 90%;
+  max-width: 400px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #8a4fd1, #6a38a0);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.header {
+  background: white;
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 2px 10px rgba(124, 67, 186, 0.1);
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -300px;
+  width: 300px;
+  height: 100vh;
+  background: white;
+  box-shadow: 2px 0 20px rgba(124, 67, 186, 0.1);
+  transition: left 0.3s;
+  z-index: 1000;
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+.sidebar-item {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 15px 20px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-item:hover {
+  background: var(--bg);
+}
+
+.catalogs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.catalog-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(124, 67, 186, 0.1);
+  cursor: pointer;
+}
+
+.catalog-name {
+  font-weight: bold;
+  word-wrap: break-word;
+}
+
+@media (max-width: 640px) {
+  .catalogs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .catalog-name {
+    font-size: 0.95rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+}</pre>
+  </div>
+
+  <div class="file-section">
+    <div class="file-header">
+      <span class="file-name">⚡ app.js</span>
+      <button class="copy-btn" onclick="copyCode('app-js')">📋 Copiar</button>
+    </div>
+    <pre class="code-block" id="app-js">// Catálogo Pro v1.0
+const SUPABASE_URL = 'https://lwhcwqbplcnpywlqaxmx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_laEXA-Sw0jVSHnlHkrjYeg_uSffZt7U';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const state = {
+  currentUser: null,
+  catalogs: [],
+  products: [],
+  sales: [],
+  currentView: 'catalogs',
+  isOnline: navigator.onLine
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('✅ Catálogo Pro v1.0 iniciado');
+  lucide.createIcons();
+  checkSession();
+  setupEventListeners();
+});
+
+async function checkSession() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    state.currentUser = session.user;
+    showMainScreen();
+    loadData();
+  } else {
+    showLoginScreen();
+  }
+}
+
+function setupEventListeners() {
+  document.getElementById('enter-btn')?.addEventListener('click', () => {
+    document.getElementById('welcome-screen').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+  });
+
+  document.getElementById('login-form')?.addEventListener('submit', handleLogin);
+  document.getElementById('menu-btn')?.addEventListener('click', toggleSidebar);
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const username = document.getElementById('login-username').value;
+  const password = document.getElementById('login-password').value;
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: username,
+      password: password
+    });
+
+    if (error) throw error;
+    state.currentUser = data.user;
+    showMainScreen();
+    loadData();
+  } catch (error) {
+    alert('Error: ' + error.message);
+  }
+}
+
+function showMainScreen() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('main-screen').classList.remove('hidden');
+}
+
+function showLoginScreen() {
+  document.getElementById('welcome-screen').classList.add('hidden');
+  document.getElementById('login-screen').classList.remove('hidden');
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+async function loadData() {
+  try {
+    const { data: catalogs } = await supabase.from('catalogs').select('*');
+    state.catalogs = catalogs || [];
+    renderCatalogs();
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+function renderCatalogs() {
+  const grid = document.getElementById('catalogs-grid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  state.catalogs.forEach(catalog => {
+    const card = document.createElement('div');
+    card.className = 'catalog-card';
+    card.innerHTML = `
+      <div style="padding: 15px;">
+        <div class="catalog-name">${catalog.name}</div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function showToast(message) {
+  alert(message);
+}</pre>
+  </div>
+
+  <div class="file-section">
+    <div class="file-header">
+      <span class="file-name">🌐 app.html</span>
+      <button class="copy-btn" onclick="copyCode('app-html')">📋 Copiar</button>
+    </div>
+    <pre class="code-block" id="app-html"><!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo Pro v1.0</title>
+  <meta name="theme-color" content="#7c43ba">
+  <link rel="manifest" href="/manifest.json">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="welcome-screen" class="welcome-screen">
+    <div class="welcome-content">
+      <h1 class="welcome-title">🛍️ Catálogo Pro</h1>
+      <p>Gestiona tu negocio de forma inteligente</p>
+      <button id="enter-btn" class="enter-btn">Entrar</button>
+    </div>
+  </div>
+
+  <div id="login-screen" class="login-screen hidden">
+    <div class="login-container">
+      <h2 style="color: #7c43ba; text-align: center; margin-bottom: 30px;">Iniciar Sesión</h2>
+      <form id="login-form">
+        <div class="form-group">
+          <label>Usuario</label>
+          <input type="text" id="login-username" required class="form-input">
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" id="login-password" required class="form-input">
+        </div>
+        <button type="submit" class="btn-primary">Ingresar</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="main-screen" class="hidden">
+    <header class="header">
+      <button id="menu-btn" style="background: none; border: none; cursor: pointer;">
+        <i data-lucide="menu"></i>
+      </button>
+      <h1 style="color: #7c43ba; font-size: 1.3rem;">Catálogo Pro</h1>
+    </header>
+
+    <aside id="sidebar" class="sidebar">
+      <div style="padding: 20px; border-bottom: 1px solid #e8dfec;">
+        <h2 style="color: #7c43ba;">Menú</h2>
+      </div>
+      <nav style="padding: 20px 0;">
+        <button class="sidebar-item">
+          <i data-lucide="grid"></i> Catálogos
+        </button>
+        <button class="sidebar-item">
+          <i data-lucide="package"></i> Productos
+        </button>
+        <button class="sidebar-item">
+          <i data-lucide="shopping-cart"></i> Ventas
+        </button>
+      </nav>
+    </aside>
+
+    <main style="padding: 20px;">
+      <div id="catalogs-view">
+        <h2 style="color: #7c43ba; margin-bottom: 20px;">Catálogos</h2>
+        <div id="catalogs-grid" class="catalogs-grid"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
+</body>
+</html></pre>
+  </div>
+
+  <script>
+    function copyCode(elementId) {
+      const codeBlock = document.getElementById(elementId);
+      const text = codeBlock.textContent;
+
+      navigator.clipboard.writeText(text).then(() => {
+        alert('✅ Código copiado! Ahora pégalo en un archivo de texto y guárdalo con el nombre que se muestra arriba.');
+      }).catch(err => {
+        // Fallback para navegadores antiguos
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('✅ Código copiado! Ahora pégalo en un archivo de texto y guárdalo con el nombre que se muestra arriba.');
+      });
+    }
+  </script>
+</body>
+</html>
